@@ -3,14 +3,24 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/7/17
+///---- 2021/7/24
+class Room_Config {
+    constructor(min_width, min_height, max_width, max_height) {
+        this.min_width = min_width;
+        this.min_height = min_height;
+        this.max_width = max_width;
+        this.max_height = max_height;
+    }
+}
 
 class Dungeon { 
 
-    constructor() {
-        this._width = 8;
-        this._height = 8;
-        
+    constructor(width, height, room_count, room_config) {
+        this._width = width;
+        this._height = height;
+        this._room_count = room_count;
+        this._room_config = room_config;
+
         this._tile_info = {
             Bedrock: {Type: -1, Color: 'rgb(0,0,0)'},
             Air: { Type: 0, Color: 'rgb(255,255,255)' },
@@ -21,22 +31,38 @@ class Dungeon {
         // 0: 空間
         // 1: 壁
         // 2: プレイヤー
-        this.map = [
-            1,1,1,1,1,1,1,-1,
-            1,1,1,1,1,1,1,-1,
-            1,1,1,1,1,1,1,-1,
-            1,1,1,1,1,1,1,-1,
-            1,1,1,1,1,1,1,-1,
-            1,1,1,1,1,1,1,-1,
-            1,1,1,1,1,1,1,-1,
-            1,1,1,1,1,1,1,-1,
-        ];
-        
+        //this.map = [
+        //    1,1,1,1,1,1,1,-1,
+        //    1,1,1,1,1,1,1,-1,
+        //    1,1,1,1,1,1,1,-1,
+        //    1,1,1,1,1,1,1,-1,
+        //    1,1,1,1,1,1,1,-1,
+        //    1,1,1,1,1,1,1,-1,
+        //    1,1,1,1,1,1,1,-1,
+        //    1,1,1,1,1,1,1,-1,
+        //];
+
+        this._init_map();
         this._make_dungeon();
+    }
+
+    _init_map() { 
+        // 最初は全部壁で埋める
+        this.map = new Array(this._width * this._height).fill(this._tile_info.Wall.Type);
+
+        // 岩盤で周囲を囲む
+        for (let y = 0; y < this._height; y++) {
+            for (let x = 0; x < this._width; x++) {
+                if (x == 0 || x == this._width - 1 || y == 0 || y == this._height - 1) {
+                    this.fill_bedrock(x, y);
+                }
+            }
+        }
     }
     
     display_dungeon()  {
         console.log("display_dungeon");
+        
         for (let y = 0; y < this._height; y++){
             for(let x=0; x < this._width; x++){
                 this._draw_tile(x, y, this._get_map(x, y));
@@ -85,21 +111,26 @@ class Dungeon {
     }
 
     _make_dungeon(){
-        console.log("make_dungeon stab");
-
-        this._make_room(5);
+        this._make_room(this._room_count);
     }
 
     _make_room(room_count) {
+        console.log("_make_room");
+
         for (let count = 0; count < room_count; count++) {
-            this._make_one_room(2, 2);
+            let width = this._get_random_range(this._room_config.min_width, this._room_config.max_width + 1);
+            let height = this._get_random_range(this._room_config.min_height, this._room_config.max_height + 1);
+            
+            this._make_one_room(width, height);
         }
-        console.log("make_room stab : 2x2 only");
     }
     
     _make_one_room(room_width, room_height) {
-        let left_x = this._get_random_range(0, this._width - (room_width - 1));
-        let upper_y = this._get_random_range(0, this._height - (room_height - 1));
+        console.log("_make_one_room");
+
+        // 作る部屋の左上の座標(周囲の岩盤を考慮)
+        let left_x = this._get_random_range(1, (this._width - 1) - (room_width - 1));
+        let upper_y = this._get_random_range(1, (this._height - 1) - (room_height - 1));
 
         for (let y = upper_y; y < upper_y + room_height; y++) {
             for (let x = left_x; x < left_x + room_width; x++) {
@@ -115,8 +146,19 @@ class Dungeon {
         return Math.floor(Math.random() * (max - min) + min);
     }
 
-    // mapのx, yの位置に空間(0)を開ける
-    dig_wall(x,  y)  {
+    // mapのx, yの位置を岩盤で埋める
+    fill_bedrock(x, y) {
+        var index = this._convert_2dTo1d(x, y);
+        this.map[index] = this._tile_info.Bedrock.Type;
+    }
+    
+    // mapのx, yの位置に空間を開ける
+    dig_wall(x,y){
+        let value = this._get_map(x, y);
+        if (value == this._tile_info.Bedrock.Type) {
+            return;
+        }
+        
         var index = this._convert_2dTo1d(x, y);
         this.map[index] = this._tile_info.Air.Type;
     }
@@ -198,7 +240,9 @@ function setup(){
     createCanvas(canvasSize, canvasSize);
     background(50, 100, 150);
 
-    my_dungeon = new Dungeon();
+    room_config = new Room_Config(2, 2, 4, 4);
+    
+    my_dungeon = new Dungeon(16, 16, 5, room_config);
     my_dungeon.display_dungeon();
 
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
