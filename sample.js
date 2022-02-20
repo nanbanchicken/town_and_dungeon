@@ -3,7 +3,59 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2021/11/20
+///---- 2021/12/18
+class MDMath {
+    // 固定の方向に曲げてやる
+    //let RotateRight = [[0, -1], [1, 0]]
+    // 次回 MDMath.RotateRight作る
+    // this.direction = MDMath.RotateRight(this.direction);
+    // vector: {x, y}
+    constructor(){
+        this.rightMatrix = [[0, -1], [1, 0]];
+        this.leftMatrix = [[0, 1], [-1, 0]];
+    }
+
+    rotateRight(vector){
+        return this.productMaxtirx(this.rightMatrix, vector);
+    }
+
+    rotateLeft(vector){
+        return this.productMaxtirx(this.leftMatrix, vector);
+    }
+
+    productMaxtirx(matrix, vector){
+        let newX = matrix[0][0] * vector.x + matrix[0][1] * vector.y;
+        let newY = matrix[1][0] * vector.x + matrix[1][1] * vector.y;
+        return {x: newX, y: newY};
+    }
+}
+
+function mdMathTest(){
+    let right = {x: 1, y: 0};
+    let down = {x: 0, y: 1};
+    let left = {x: -1, y: 0};
+    let up = {x: 0, y: -1};
+
+    let case1 = {data: right, resultRight: down, resultLeft: up };
+    // let case2 = {data: down, resultRight: left, resultLeft: right };
+    // let case3 = {data: left, resultRight: up, resultLeft: down };
+    // let case4 = {data: up, resultRight: right, resultLeft: left };
+
+    let mdMath = new MDMath();
+    let case1RightResult = mdMath.rotateRight(case1.data);
+    let case1LeftResult = mdMath.rotateLeft(case1.data);
+    if(case1RightResult.x != case1.resultRight.x || case1RightResult.y != case1.resultRight.y) {
+        console.log(`右に曲がってないよ: ${JSON.stringify(case1.data)} -> ${JSON.stringify(case1RightResult)}`);
+    }else{
+        console.log(`右OK: ${case1.data} -> ${case1RightResult}`);
+    }
+    if(case1LeftResult.x != case1.resultLeft.x || case1LeftResult.y != case1.resultLeft.y) {
+        console.log(`左に曲がってないよ: ${JSON.stringify(case1.data)} -> ${JSON.stringify(case1LeftResult)}`);
+    }else{
+        console.log(`左OK: ${case1.data} -> ${case1LeftResult}`);
+    }
+}
+
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -115,6 +167,7 @@ class MDMap { // [M]achi to [D]ungen no [Map]
         this.map = new Array(this._width * this._height).fill(this._default_fill);
     }
 
+    // タイルの値を更新, set_valueと同等
     update(x, y, value) {
         let i = this.convert_2dTo1d(x, y);
         this.map[i] = value;
@@ -270,7 +323,12 @@ class Dungeon {
             Wall: { Type: 1, Color: 'rgb(100,100,100)' }, // 壁
             Player: { Type: 2, Color: 'rgb(255,0,0)' }, // プレイヤー
             Treasure: { Type: 3, Color: 'rgb(0,255,0)'}, // 宝箱
-            Enemy: { Type: 4, Color: 'rgb(192,149,103)'} // 宝箱
+            Enemy: { Type: 4, Color: 'rgb(192,149,103)'}, // 敵
+            // 魔法の石
+            R: { Type: 100, Color: 'rgb(255,125,125)'}, // 右魔法石 薄い赤
+            L: { Type: 101, Color: 'rgb(125,125,255)'}, // 左魔法石 薄い青
+            B: { Type: 102, Color: 'rgb(125,0,125)'},   // 破壊石　紫
+            C: { Type: 103, Color: 'rgb(255,255,0)'},   // 回復石 黄
         };
 
         this.map = null;
@@ -279,6 +337,8 @@ class Dungeon {
 
         this._enemy_white_list = [];
         this._enemyList = null;
+
+        this._stoneList = [];
 
         this._mask = new Dungeon_Mask(this._width, this._height);
         this._init();
@@ -289,7 +349,8 @@ class Dungeon {
 
     _init() { 
         // 最初は全部壁で埋める
-        this.map = new MDMap(this._width, this._height, this._tile_info.Wall.Type);
+        // this.map = new MDMap(this._width, this._height, this._tile_info.Wall.Type);
+        this.map = new MDMap(this._width, this._height, this._tile_info.Air.Type);
 
         // 岩盤で周囲を囲む
         for (let y = 0; y < this._height; y++) {
@@ -324,6 +385,10 @@ class Dungeon {
         this._draw_tile(x, y, this._tile_info.Player.Type);
     }
 
+    display_stone(x, y, stone) {
+        this._draw_tile(x, y, this._tile_info[stone.property].Type);
+    }
+
     display_treasures() {
         this._treasureList.display();
     }
@@ -339,6 +404,14 @@ class Dungeon {
     display_enemy(x, y) {
         this._draw_tile(x, y, this._tile_info.Enemy.Type);
     }
+
+    // 魔法石を置く
+    add_stone(x, y, stone){
+        this._stoneList.push({x: x, y: y, stone: stone});
+        this.map.update(x, y, this._tile_info[stone.property].Type);
+    }
+
+    // 
 
     _get_tile_color(tile_type) {
         for (let item in this._tile_info) {
@@ -949,30 +1022,119 @@ class EnemyList extends MDObjectList {
 //     }
 // }
 
-class BaseClass {
-    constructor(name){
-        this.name = name;
+class Stone{
+    constructor(property, cost, damage, maxDistance){
+        this.property = property; // R, L, B
+        this.cost = cost; // 実行コスト
+        this.damage = damage;
+        this.maxDistance = maxDistance; // 飛行距離
+
+        this.leftDistance = maxDistance; // 残りの距離
+        this.position = null; // {x, y}
+        this.direction = null; // {x, y}
     }
 
-    get_name(){
-        return this.name;
+    // 2021/12/18 うごいた！
+    // leftDistance にバグあり。１つ遠くまで飛ぶよ。
+    execute(dungeon, position, direction){
+        console.log('Stone.execute : ')
+        this.position = position;
+        this.direction = direction;
+
+        while (this.leftDistance >= 0) {
+            let next = {
+                x: this.position.x + this.direction.x,
+                y: this.position.y + this.direction.y
+            };
+    
+            if(this.leftDistance == 0){
+                // 石を配置
+                console.log('石を配置');
+                dungeon.add_stone(next.x, next.y, this);
+                dungeon.display_stone(next.x, next.y, this);
+                return;
+            }
+    
+            let nextTile = dungeon.map.get_value(next.x, next.y);
+            if(nextTile == dungeon._tile_info.Air.Type){
+                this.leftDistance -= 1;
+                this.position = {x: next.x, y: next.y};
+                console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
+            }else {
+                switch (nextTile) {
+                    case dungeon._tile_info.Bedrock.Type:
+                    case dungeon._tile_info.Wall.Type:
+                    case dungeon._tile_info.R.Type:
+                        // 固定の方向右に曲げてやる
+                        this.direction = my_mdMath.rotateRight(this.direction);
+                        break;
+                    case dungeon._tile_info.L.Type:
+                        // 左に曲げる
+                        this.direction = my_mdMath.rotateLeft(this.direction);
+                        break;
+                    case dungeon._tile_info.Enemy.Type:
+                    case dungeon._tile_info.Player.Type:
+                        // ブレイクさせる
+                        break;
+                    case dungeon._tile_info.Treasure.Type:
+                        // 貫通させたい
+                        break;
+                    default:
+                        console.log('Stone::execute 次タイルの判定に失敗しました。');
+                        break;
+                }
+    
+            }    
+        }
     }
 }
 
-class MainClass extends BaseClass{
-    constructor(name, age){
-        super(name);
-
-        this.age = age;
+class Magic{
+    constructor(maxLength){
+        this.stones = [];
+        this.maxLength = 5; // 石を入れられる数
     }
 
-    output_log(){
-        console.log(this.name);
-        console.log(this.age);
+    //m : [l3, l4, l5]
+    // m.push([r7,r9,r10])
+    // m仮: [l3, l4, l5, r7,r9,r10]
+    // m: [l3, l4, l5, r7,r9]
+
+    // 複数の石を入れる
+    pushStones(stones){ //次回やりましょう！
+        stones.forEach(s => {
+            this.pushStone(s);
+        });
     }
 
-    output_name(){
-        console.log(this.get_name());
+    // 一つの石を入れる
+    pushStone(stone){
+        if(this.stones.length < this.maxLength){
+            this.stones.push(stone);
+        } 
+        // はいらないよー処理
+    }
+
+    // 魔法の実行
+    // playerPosition (x, y)
+    // playerDirection vector(x=1, y=0) 右を向いているとき
+    execute(dungeon, playerPosition, playerDirection){
+        // コストの計算
+
+        for (const stone of stones) {
+            // マップの情報、向いている方向が必要
+            let next_x = playerPosition.x + playerDirection.x;
+            let next_y = playerPosition.y + playerDirection.y;
+            dungeon.map.get_value()
+
+            // 経路計算
+
+            // マップ情報の更新
+
+            // 石の配置
+
+            // ダメージ計算
+        }
     }
 }
 
@@ -982,8 +1144,11 @@ let canvasSize = 600;
 let my_dungeon;
 let my_player;
 let my_sight_pattern;
+let my_mdMath;
 
 function setup(){
+    my_mdMath = new MDMath();
+
     canvasSize=windowHeight;
 
     createCanvas(canvasSize, canvasSize);
@@ -1023,6 +1188,21 @@ function keyPressed() {
         my_player.move(1, 0);
     }
 
+    // 魔法のテスト
+    if (key == 'r'){
+        let stone = new Stone("R", 0, 1, 5);
+        stone.execute(my_dungeon, 
+            {x: my_player._position_x, y: my_player._position_y},
+            {x: 1, y: 0});
+        console.log('migi uchi!')
+    }else if(key == 'l'){
+        let stone = new Stone("L", 0, 1, 5);
+        stone.execute(my_dungeon, 
+            {x: my_player._position_x, y: my_player._position_y},
+            {x: 1, y: 0});
+        console.log('Left uchi!')
+    }
+
     display_all();
 
     console.log("--------------------" + key);
@@ -1039,7 +1219,7 @@ function display_all() {
     // my_player.display();
     
     // マスクの描画
-    my_dungeon.display_mask(my_player._position_x, my_player._position_y);
+    // my_dungeon.display_mask(my_player._position_x, my_player._position_y);
  
     my_player.display();
 
