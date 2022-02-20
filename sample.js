@@ -1,9 +1,9 @@
 // syumino programming
 // https://www.youtube.com/channel/UClZj9tdR1TRkxglnaA55pJA
 // twitter @Suminoprogramm1
-// Nanban and Jun
+// Nanban and Junji
 
-///---- 2021/11/6
+///---- 2021/11/20
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -395,7 +395,7 @@ class Dungeon {
     /* 宝箱関係 */
     _create_treasures(treasure_count){
         this._create_treasure_white_list();
-        this._treasureList = new Treasure_List(this, treasure_count);
+        this._treasureList = new TreasureList(this, treasure_count);
         this._dig_wall_in_treasure();
     }
 
@@ -420,7 +420,7 @@ class Dungeon {
     /* 敵関係 */
     _create_enemy(enemy_count){
         this._create_enemy_white_list();
-        this._enemyList = new Enemy_List(this, enemy_count);
+        this._enemyList = new EnemyList(this, enemy_count);
         this._dig_wall_in_enemy();
     }
 
@@ -573,21 +573,21 @@ class MDObject{
 
 class MDObjectList{
 
-    constructor(my_dungeon, count, md_object) {
+    constructor(my_dungeon, count) {
         this._dungeon = my_dungeon;
         this._count = count;
-        this._object_list = [];
+        this._object_list = []; //is_exist()を持つものにかぎる/MDobjectの継承クラスに限る
 
-        this._make(md_object);
+        this._make();
     }
 
     // Enemyとかをコピーできるはず
-    _make(md_object) {
-        for (let i = 0; i < this._count; i++) {
-            new_md_object = Object.assign({}, md_object);
-            new_md_object.make();
-            this._object_list.push(new_md_object);
-        }
+    _make() {
+        // for (let i = 0; i < this._count; i++) {
+        //     new_md_object = Object.assign({}, md_object);
+        //     new_md_object.make();
+        //     this._object_list.push(new_md_object);
+        // }
     }
 
     get(){
@@ -767,50 +767,33 @@ class Treasure extends MDObject{
     }
 }
 
-class Treasure_List {
+class TreasureList extends MDObjectList{
 
     constructor(my_dungeon, count) {
-        this._dungeon = my_dungeon;
-        this._count = count;
-        this._treasureList = [];
-
+        super(my_dungeon, count);
         this._make();
     }
 
-    _make() {
+    _make(){
         for (let i = 0; i < this._count; i++) {
-            this._treasureList.push(new Treasure(this._dungeon));
+            this._object_list.push(new Treasure(this._dungeon));
         }
     }
 
-    get(){
-        return this._treasureList;
+    get_treasure(x, y){
+        return this.get_md_object(x, y);
     }
 
-    get_treasure(x, y) {
-        for (let i = 0; i < this._count; i++) {
-            if (this._treasureList[i].is_exist(x, y)) {
-                return this._treasureList[i];
-            }
-        }
-
-        return null;
+    is_exist_treasure(x, y){
+        return this.is_exist(x, y);
     }
 
-    is_exist_treasure(x, y) {
-        let treasure = this.get_treasure(x, y);
-        if (treasure == null)
-            return false;
-        
-        return true;
-    }
-    
     is_opened_treasure(x, y) {
         let treasure = this.get_treasure(x, y);
         if (treasure == null)
             return false;
         
-        return treasure.is_opened();
+        return treasure.is_opened(); // Treasure が is_opend()を持ってる前提
     }
     
     open_treasure(x, y) {
@@ -820,12 +803,6 @@ class Treasure_List {
         }
 
         treasure.open();
-    }
-    
-    display() {
-        for (let i = 0; i < this._count; i++) {
-            this._treasureList[i].display();
-        }
     }
 }
 
@@ -877,55 +854,39 @@ class Enemy extends MDObject {
     }
 }
 
-class Enemy_List {
+class EnemyList extends MDObjectList {
 
-    constructor(my_dungeon, count) {
-        this._dungeon = my_dungeon;
-        this._count = count;
-        this._enemyList = [];
-
+    constructor(my_dungeon, count){
+        super(my_dungeon, count);
         this._make();
     }
 
-    _make() {
+    _make(){
         for (let i = 0; i < this._count; i++) {
-            this._enemyList.push(new Enemy(this._dungeon));
+            this._object_list.push(new Enemy(this._dungeon));
         }
     }
 
-    get(){
-        return this._enemyList;
+    get_enemy(x, y){
+        return this.get_md_object(x, y);
     }
 
-    get_enemy(x, y) {
-        for (let i = 0; i < this._count; i++) {
-            if (this._enemyList[i].is_exist(x, y)) {
-                return this._enemyList[i];
-            }
-        }
-
-        return null;
+    is_exist_enemy(x, y){
+        return this.is_exist(x, y);
     }
 
-    is_exist_enemy(x, y) {
-        let enemy = this.get_enemy(x, y);
-        if (enemy == null)
-            return false;
-        
-        return true;
-    }
-    
-    // 未実装
-    attack_enemy(x, y) {
+    // enemyがtargetに攻撃する
+    attack_enemy(x, y, target) {
         let enemy = this.get_enemy(x, y);
         if (enemy == null) {
             return false;
         }
 
-        enemy.attack();
+        enemy.attack(target);
         return enemy;
     }
 
+    // enemyがtarget?攻撃される
     attacked_enemy(x, y) {
         let enemy = this.get_enemy(x, y);
         if (enemy == null) {
@@ -934,12 +895,6 @@ class Enemy_List {
 
         enemy.attacked();
         return enemy;
-    }
-    
-    display() {
-        for (let i = 0; i < this._count; i++) {
-            this._enemyList[i].display();
-        }
     }
 }
 
@@ -1045,12 +1000,12 @@ function setup(){
     display_all();
 
     // 継承が使えるかな？
-//    var test = new MainClass('hoge', 30);
-//    console.log('debug1:');
-//    test.output_log();
-//    console.log('debug2:');
-//    test.output_name();
-//    console.log(test.get_name());
+    //    var test = new MainClass('hoge', 30);
+    //    console.log('debug1:');
+    //    test.output_log();
+    //    console.log('debug2:');
+    //    test.output_name();
+    //    console.log(test.get_name());
 }
  
 function draw(){
@@ -1070,21 +1025,22 @@ function keyPressed() {
 
     display_all();
 
-    console.log("--------------------"+key);
+    console.log("--------------------" + key);
 }
 
 function display_all() {
     my_dungeon.display();
     // my_objects.display_objects();
     // my_enemy.display_enemy();
-    // my_treasure_list.display();
+    // my_treasurelist.display();
     my_dungeon.display_treasures();
     my_dungeon.display_enemies();
     // my_player.display();
     // my_player.display();
     
+    // マスクの描画
     my_dungeon.display_mask(my_player._position_x, my_player._position_y);
-
+ 
     my_player.display();
 
 }
