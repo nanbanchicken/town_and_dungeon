@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/8/14
+///---- 2021/8/21
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -26,23 +26,21 @@ class Dungeon_Mask {
 
         this.mask = [];
         
-        this._init_mask();
+        this._init();//init_mask->init
     }
         
-    _init_mask() {
+    _init() {
         // 最初は全部見えない
         this.mask = new Array(this._width * this._height).fill(false);
     }
     
-    display_mask(dungeon, player_x, player_y) {
-        console.log("display_mask");
-
-        console.log(this.mask);
+    display(dungeon, player_x, player_y) {
+        console.log("Mask.display");
 
         for (let y = 0; y < this._height; y++) {
             for (let x = 0; x < this._width; x++) {
                 
-                let mask_value = this.get_mask(x, y);
+                let mask_value = this.get_value(x, y);
                 if (mask_value == false) {
                     this._draw_tile(x, y, this._tile_info.Black.Type);
                 }
@@ -52,7 +50,7 @@ class Dungeon_Mask {
                         continue;
                     }
                     
-                    let dungeon_value = dungeon.get_map(x, y);
+                    let dungeon_value = dungeon.get_value(x, y);
                     if (dungeon_value != dungeon._tile_info.Treasure.Type) {
                         this._draw_tile(x, y, this._tile_info.Gray.Type);
                     }
@@ -60,8 +58,8 @@ class Dungeon_Mask {
             }
         }
 
-        // why get_map() value == 0? 2021/08/14
-        console.log('display_mask: '+'dungeon_value(player) =' + dungeon.get_map(player_x, player_y));
+        // why get_value() value == 0? 2021/08/14
+        // console.log('display_mask: '+'dungeon_value(player) =' + dungeon.get_value(player_x, player_y));
 
     }
 
@@ -87,7 +85,7 @@ class Dungeon_Mask {
 
     // 視界を広げる
     // sight: 視界
-    update_mask(x, y, sight) {
+    update(x, y, sight) {
         let i = this._convert_2dTo1d(x, y);
         this.mask[i] = true;
     }
@@ -108,7 +106,7 @@ class Dungeon_Mask {
     }
     
     // (x, y)のマスクの値を取得
-    get_mask(x, y) {
+    get_value(x, y) {
         var index = this._convert_2dTo1d(x, y);
         return (this.mask[index]);
     }
@@ -131,14 +129,16 @@ class Dungeon {
             Treasure: { Type: 3, Color: 'rgb(0,255,0)'} // 宝箱
         };
 
+        this.map = [];
+
         this._mask = new Dungeon_Mask(width, height);
-        this._init_map();
-        this._make_dungeon();
+        this._init();
+        this._make();
         this._create_treasure_white_list();
-        this._treasure_list = new Treasure_List(this, treasure_count);
+        this._treasureList = new Treasure_List(this, treasure_count);
     }
 
-    _init_map() { 
+    _init() { 
         // 最初は全部壁で埋める
         this.map = new Array(this._width * this._height).fill(this._tile_info.Wall.Type);
 
@@ -153,19 +153,19 @@ class Dungeon {
     }
 
     display_mask(player_x, player_y) {
-        this._mask.display_mask(this, player_x, player_y);
+        this._mask.display(this, player_x, player_y);
     }
     
     update_mask(player_x, player_y, sight) {
-        this._mask.update_mask(player_x, player_y, sight);
+        this._mask.update(player_x, player_y, sight);
     }
  
-    display_dungeon()  {
-        console.log("display_dungeon");
+    display()  {
+        console.log("dungeon.display");
         
         for (let y = 0; y < this._height; y++){
             for(let x=0; x < this._width; x++){
-                this._draw_tile(x, y, this.get_map(x, y));
+                this._draw_tile(x, y, this.get_value(x, y));
             }
         }
     }
@@ -176,7 +176,7 @@ class Dungeon {
     }
 
     display_treasures() {
-        this._treasure_list.display_treasures();
+        this._treasureList.display();
     }
     
     // 宝箱を表示
@@ -221,12 +221,12 @@ class Dungeon {
     }
 
     // (x, y)のマップの値を取得
-    get_map(x, y)  {
+    get_value(x, y)  {
         var index = this._convert_2dTo1d(x, y);
         return (this.map[index]);
     }
 
-    _make_dungeon(){
+    _make(){
         this._make_room(this._room_count);
     }
 
@@ -282,7 +282,7 @@ class Dungeon {
     
     // mapのx, yの位置に空間を開ける
     dig_wall(x,y){
-        let value = this.get_map(x, y);
+        let value = this.get_value(x, y);
         if (value == this._tile_info.Bedrock.Type) {
             return;
         }
@@ -321,26 +321,26 @@ class Dungeon {
     }
 
     is_bedrock(x, y) {
-        let value = this.get_map(x, y);
+        let value = this.get_value(x, y);
         return (value == this._tile_info.Bedrock.Type);
     }
     
     is_wall(x, y) {
-        let value = this.get_map(x, y);
+        let value = this.get_value(x, y);
         return (value == this._tile_info.Wall.Type);
     }
 
     // 宝箱関係
     is_exist_treasure(x, y) {
-        return this._treasure_list.is_exist_treasure(x, y);
+        return this._treasureList.is_exist_treasure(x, y);
     }
     
     is_opened_treasure(x, y) {
-        return this._treasure_list.is_opened_treasure(x, y);
+        return this._treasureList.is_opened_treasure(x, y);
     }
     
     open_treasure(x, y) {
-        return this._treasure_list.open_treasure(x, y);
+        return this._treasureList.open_treasure(x, y);
     }
 
 }
@@ -350,14 +350,16 @@ class Player {
 
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
-        
-        this._make_player();
+        this._position_x = 0;
+        this._position_y = 0;
+
+        this._make();
 
         this._stats = new Player_Stats();
     }
 
-    _make_player() {
-        console.log("make_player");
+    _make() {
+        console.log("player.make");
         
         let air_index = this._dungeon.get_first_air_index();
 
@@ -365,17 +367,17 @@ class Player {
         this._position_y = this._dungeon.convert_1dTo2d_y(air_index);
     }
     
-    display_player() {
-        console.log("display_player");
+    display() {
+        console.log("player.display");
 
         // this._dungeon.display_dungeon();
         this._dungeon.display_player(this._position_x, this._position_y);
-        this._stats.display_player_stats();
+        this._stats.display();
     }
 
     // dir_x, dir_y: 移動量
-    move_player(dir_x, dir_y) {
-        console.log('move_player:' + dir_x + ':'+dir_y);
+    move(dir_x, dir_y) {
+        console.log('player.move :' + dir_x + ':'+dir_y);
         let next_x = this._position_x + dir_x;
         let next_y = this._position_y + dir_y;
 
@@ -428,7 +430,7 @@ class Player_Stats {
         this._pickup_treasures += 1;
     }
     
-    display_player_stats() {
+    display() {
         textAlign(LEFT, TOP);
         textSize(this._text_size);
         fill(this._text_color);
@@ -444,13 +446,15 @@ class Treasure {
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
         
+        this._position_x = 0;
+        this._position_y = 0;
         this._opened = false;
 
-        this._make_treasure();
+        this._make();
     }
 
-    _make_treasure() {
-        console.log("make_treasure");
+    _make() {
+        console.log("treasure.make");
 
         // ランダム位置に配置(岩盤以外)
         let index = this._dungeon.get_random_treasure_index();
@@ -459,21 +463,21 @@ class Treasure {
         this._position_y = this._dungeon.convert_1dTo2d_y(index);
     }
     
-    is_exist_treasure(x, y) {
+    is_exist(x, y) {
         let is_exist = this._position_x == x && this._position_y == y;
         return is_exist;
     }
 
-    is_opened_treasure() {
+    is_opened() {
         return this._opened;
     }
     
-    open_treasure() {
+    open() {
         this._opened = true;
     }
 
-    display_treasure() {
-        console.log("display_treasure");
+    display() {
+        console.log("treasure.display");
 
         this._dungeon.display_treasure(this._position_x, this._position_y);
     }
@@ -484,21 +488,21 @@ class Treasure_List {
     constructor(my_dungeon, count) {
         this._dungeon = my_dungeon;
         this._count = count;
-        this._treasures = [];
+        this._treasureList = [];
 
-        this._make_treasures();
+        this._make();
     }
 
-    _make_treasures() {
+    _make() {
         for (let i = 0; i < this._count; i++) {
-            this._treasures.push(new Treasure(this._dungeon));
+            this._treasureList.push(new Treasure(this._dungeon));
         }
     }
 
     get_treasure(x, y) {
         for (let i = 0; i < this._count; i++) {
-            if (this._treasures[i].is_exist_treasure(x, y)) {
-                return this._treasures[i];
+            if (this._treasureList[i].is_exist(x, y)) {
+                return this._treasureList[i];
             }
         }
 
@@ -518,7 +522,7 @@ class Treasure_List {
         if (treasure == null)
             return false;
         
-        return treasure.is_opened_treasure();
+        return treasure.is_opened();
     }
     
     open_treasure(x, y) {
@@ -527,12 +531,12 @@ class Treasure_List {
             return false;
         }
 
-        treasure.open_treasure();
+        treasure.open();
     }
     
-    display_treasures() {
+    display() {
         for (let i = 0; i < this._count; i++) {
-            this._treasures[i].display_treasure();
+            this._treasureList[i].display();
         }
     }
 }
@@ -565,29 +569,29 @@ function draw(){
 
 function keyPressed() {
     if (key == 'w') { //up
-        my_player.move_player(0, -1);
+        my_player.move(0, -1);
     } else if (key == 'a') { //left
-        my_player.move_player(-1, 0);
+        my_player.move(-1, 0);
     } else if (key == 's') { //right
-        my_player.move_player(0, 1);
+        my_player.move(0, 1);
     } else if (key == 'd') { //down
-        my_player.move_player(1, 0);
+        my_player.move(1, 0);
     }
 
     display_all();
 }
 
 function display_all() {
-    my_dungeon.display_dungeon();
+    my_dungeon.display();
     // my_objects.display_objects();
     // my_enemy.display_enemy();
-    // my_treasure_list.display_treasures();
+    // my_treasure_list.display();
     my_dungeon.display_treasures();
-    // my_player.display_player();
-    // my_player.display_player_stats();
+    // my_player.display();
+    // my_player.display();
     
     my_dungeon.display_mask(my_player._position_x, my_player._position_y);
 
-    my_player.display_player();
+    my_player.display();
 
 }
