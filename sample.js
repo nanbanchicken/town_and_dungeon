@@ -3,32 +3,33 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/7/10
+///---- 2021/7/17
 
 class Dungeon { 
 
     constructor() {
         this._width = 8;
         this._height = 8;
-
-        this._tile_type = {
-            Air: 0,
-            Wall: 1,
-            Player: 2
-        };
         
+        this._tile_info = {
+            Bedrock: {Type: -1, Color: 'rgb(0,0,0)'},
+            Air: { Type: 0, Color: 'rgb(255,255,255)' },
+            Wall: { Type: 1, Color: 'rgb(100,100,100)' },
+            Player: { Type: 2, Color: 'rgb(255,0,0)' }
+        };
+              
         // 0: 空間
         // 1: 壁
         // 2: プレイヤー
         this.map = [
-            1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,
-            1,1,1,1,1,1,1,1,
+            1,1,1,1,1,1,1,-1,
+            1,1,1,1,1,1,1,-1,
+            1,1,1,1,1,1,1,-1,
+            1,1,1,1,1,1,1,-1,
+            1,1,1,1,1,1,1,-1,
+            1,1,1,1,1,1,1,-1,
+            1,1,1,1,1,1,1,-1,
+            1,1,1,1,1,1,1,-1,
         ];
         
         this._make_dungeon();
@@ -45,16 +46,18 @@ class Dungeon {
 
     // プレイヤーを表示
     display_player(x, y) {
-        this._draw_tile(x, y, this._tile_type.Player);
+        this._draw_tile(x, y, this._tile_info.Player.Type);
     }
 
-    _draw_tile(x, y, tile_type){
-        if (tile_type == this._tile_type.Air){
-            fill(255, 255, 255);
-        } else if (tile_type == this._tile_type.Wall){
-            fill(0, 0, 0);
-        } else if (tile_type == this._tile_type.Player) {
-            fill(255, 0, 0);
+    _draw_tile(x, y, tile_type)  {
+        if (tile_type == this._tile_info.Air.Type)  {
+            fill(this._tile_info.Air.Color);
+        } else if (tile_type == this._tile_info.Bedrock.Type){
+            fill(this._tile_info.Bedrock.Color);
+        } else if (tile_type == this._tile_info.Wall.Type){
+            fill(this._tile_info.Wall.Color);
+        } else if (tile_type == this._tile_info.Player.Type) {
+            fill(this._tile_info.Player.Color);
         }
         
         rect(x*20, y*20, 20, 20);
@@ -100,7 +103,7 @@ class Dungeon {
 
         for (let y = upper_y; y < upper_y + room_height; y++) {
             for (let x = left_x; x < left_x + room_width; x++) {
-                this._dig_wall(x, y);
+                this.dig_wall(x, y);
             }
         }
     }
@@ -113,18 +116,28 @@ class Dungeon {
     }
 
     // mapのx, yの位置に空間(0)を開ける
-    _dig_wall(x,  y)  {
+    dig_wall(x,  y)  {
         var index = this._convert_2dTo1d(x, y);
-        this.map[index] = this._tile_type.Air;
+        this.map[index] = this._tile_info.Air.Type;
     }
 
     // 最初の空間座標を取得する
     get_first_air_index() {
         for (let i = 0; i < this._width * this._height; i++) {
-            if (this.map[i] == this._tile_type.Air) {
+            if (this.map[i] == this._tile_info.Air.Type) {
                 return i;
             }
         }
+    }
+
+    is_bedrock(x, y) {
+        let value = this._get_map(x, y);
+        return (value == this._tile_info.Bedrock.Type);
+    }
+    
+    is_wall(x, y) {
+        let value = this._get_map(x, y);
+        return (value == this._tile_info.Wall.Type);
     }
     
 }
@@ -150,8 +163,25 @@ class Player {
     display_player() {
         console.log("display_player");
 
-        this._dungeon.display_dungeon();
+        // this._dungeon.display_dungeon();
         this._dungeon.display_player(this._position_x, this._position_y);
+    }
+
+    // dir_x, dir_y: 移動量
+    move_player(dir_x, dir_y) {
+        let next_x = this._position_x + dir_x;
+        let next_y = this._position_y + dir_y;
+
+        if (this._dungeon.is_bedrock(next_x, next_y)) {
+            // 行き先が岩盤の移動はなし
+        } else if (this._dungeon.is_wall(next_x, next_y)) {
+            // 行き先が壁の場合は掘る(移動はなし)
+            this._dungeon.dig_wall(next_x, next_y);
+        } else {
+            // 進む
+            this._position_x = next_x;
+            this._position_y = next_y;    
+        }
     }
 }
 
@@ -159,6 +189,8 @@ class Player {
 //-------
 
 let canvasSize = 600;
+let my_dungeon;
+let my_player;
 
 function setup(){
     canvasSize=windowHeight;
@@ -166,13 +198,34 @@ function setup(){
     createCanvas(canvasSize, canvasSize);
     background(50, 100, 150);
 
-    let my_dungeon = new Dungeon();
+    my_dungeon = new Dungeon();
     my_dungeon.display_dungeon();
 
-    let my_player = new Player(my_dungeon); // 空き部屋の一番左上
+    my_player = new Player(my_dungeon); // 空き部屋の一番左上
     my_player.display_player();
 }
  
 function draw(){
 
+}
+
+function keyPressed() {
+    if (key == 'w') { //up
+        my_player.move_player(0, -1);
+    } else if (key == 'a') { //left
+        my_player.move_player(-1, 0);
+    } else if (key == 's') { //right
+        my_player.move_player(0, 1);
+    } else if (key == 'd') { //down
+        my_player.move_player(1, 0);
+    }
+
+    display_all();
+}
+
+function display_all() {
+    my_dungeon.display_dungeon();
+    // my_objects.display_objects();
+    // my_enemy.display_enemy();
+    my_player.display_player();
 }
