@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/9/11
+///---- 2021/9/18
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -15,33 +15,25 @@ class Room_Config {
 
 class SightPattern{
     // width, height, size
-    constructor(w, h, s){
+    constructor(w, h){
         this._width = w;
         this._height = h;
-        this._size = s;
-        this._temp_size = null;
-        this._preset_patterns = {'四角': [], '三角': []}; // デフォルトのパターン
-        
-        this.create_preset_pattern();
     }
 
-    create_preset_pattern(){
-        let sight_size = this._temp_size;
-        if (sight_size == null){
-            sight_size = this._size;
-        }
-
+    create_square_pattern(sight_size){
         // 四角
         // [1, 1, 1,
         //  1, 1, 1,
         //  1, 1, 1]
-        this._preset_patterns['四角'] = new MDMap(sight_size, sight_size, 1);
-        
+        return new MDMap(sight_size, sight_size, 1);
+    }
+
+    create_cross_pattern(sight_size){
         // 十字
         // [0, 1, 0,
         //  1, 1, 1,
         //  0, 1, 0]
-        this._preset_patterns['十字'] = new MDMap(sight_size, sight_size, 0);
+        let pattern = new MDMap(sight_size, sight_size, 0);
         if(sight_size % 2 == 0){
             // 偶数
         }
@@ -53,18 +45,51 @@ class SightPattern{
             for(let x = 0; x < sight_size; x++){
                 for(let y = 0; y < sight_size; y++){
                     if(Math.abs(x - mid_index) + Math.abs(y - mid_index) <= mid_index){
-                        this._preset_patterns['十字'].update(x, y, 1);
+                        pattern.update(x, y, 1);
                     }
                 }
             }
         }
+        
+        return pattern;
+    }
 
-        console.log(this._preset_patterns['四角']);
-        console.log(this._preset_patterns['十字']);
+    get_pattern(x, y, type, sight_size){
+        // パターン作成
+        let pattern = null;
+        if(type == 'square'){
+            pattern = this.create_square_pattern(sight_size);
+        }else if(type == 'cross'){
+            pattern = this.create_cross_pattern(sight_size);
+        }else{
+            console.log('未対応の視界パターン！！！');
+            return null;
+        }
 
-        // 三角
-        // [1, 1, 1,
-        //  0, 1, 0]
+        // 実際に見える位置だけ特定
+        // [[-1, 0], [0, 0], [0, -1],,,]
+        let result = [];
+        let start = (sight_size - ((sight_size + 1) / 2)) * -1;
+        let end = start * -1;
+        for(let pattern_x = start; pattern_x <= end; pattern_x++){
+            for(let pattern_y = start; pattern_y <= end; pattern_y++){
+                // プレイヤーからの相対座標とパターンの絶対座標の変換
+                let pattern_x_abs = pattern_x - start;
+                let pattern_y_abs = pattern_y - start;
+                // value == 1が見える位置
+                let value = pattern.get_value(pattern_x_abs , pattern_y_abs);
+                let dungeon_x_abs = x + pattern_x;
+                let dungeon_y_abs = y + pattern_y;
+                if(value == 1 && 
+                  (0< dungeon_x_abs && dungeon_x_abs < this._width - 1) &&
+                  (0< dungeon_y_abs && dungeon_y_abs < this._height - 1))
+                  {
+                    result.push([pattern_x, pattern_y]);
+                  }
+            }
+        }
+
+        return result;
     }
 
 }
@@ -133,6 +158,7 @@ class Dungeon_Mask {
         };
 
         this.mask = new MDMap(w, h, false);
+        this._sight_pattern = new SightPattern(w, h);
     }
     
     display(dungeon, player_x, player_y) {
@@ -185,9 +211,14 @@ class Dungeon_Mask {
     }
 
     // 視界を広げる
-    // sight: 視界
+    // sight: 視界サイズ
     update(x, y, sight) {
-        this.mask.update(x, y, true);
+        let patterns = this._sight_pattern.get_pattern(x, y, 'cross', sight);
+        // [[-1, 0], [-1,-1],[0,-1],,,[0,1]] 視界あける位置リスト（補正値）
+        console.log(patterns);
+        for(let pattern of patterns){
+            this.mask.update(x + pattern[0], y + pattern[1], true);
+        }
     }
 }
 
@@ -454,7 +485,7 @@ class Player {
             this._position_x = next_x;
             this._position_y = next_y;
             this._stats.add_walk();
-            this._dungeon.update_mask(next_x, next_y, -1); // -1は視界(仮の値)
+            this._dungeon.update_mask(next_x, next_y, 5); // 視界サイズ
 
             let is_exist_treasure = this._dungeon.is_exist_treasure(this._position_x, this._position_y)
             if (is_exist_treasure) {
@@ -623,7 +654,7 @@ function setup(){
 
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
     
-    my_sight_pattern = new SightPattern(16, 16, 5);
+    my_sight_pattern = new SightPattern(16, 16);
     
     display_all();
 }
