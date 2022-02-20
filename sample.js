@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/9/25
+///---- 2021/10/2
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -170,8 +170,8 @@ class Dungeon_Mask {
     display(dungeon, player_x, player_y) {
         console.log("Mask.display");
 
-        for (let y = 0; y < this._height; y++) {
-            for (let x = 0; x < this._width; x++) {
+        for (let y = 1; y < this._height - 1; y++) {
+            for (let x = 1; x < this._width - 1; x++) {
                 
                 let mask_value = this.mask.get_value(x, y);
                 if (mask_value == this._sight_info.Black.Type) {
@@ -273,12 +273,12 @@ class Dungeon {
         };
 
         this.map = null;
+        this._treasureList = null;
 
         this._mask = new Dungeon_Mask(this._width, this._height);
         this._init();
         this._make();
-        this._create_treasure_white_list();
-        this._treasureList = new Treasure_List(this, treasure_count);
+        this._create_treasures(treasure_count);
     }
 
     _init() { 
@@ -380,8 +380,14 @@ class Dungeon {
     }
 
     /* 宝箱関係 */
+    _create_treasures(treasure_count){
+        this._create_treasure_white_list();
+        this._treasureList = new Treasure_List(this, treasure_count);
+        this._dig_wall_in_treasure();
+    }
 
     // 宝箱のホワイトリスト
+    // 宝箱が重ならないように
     _create_treasure_white_list() {
         this._treasure_white_list = [];
         
@@ -390,6 +396,13 @@ class Dungeon {
                 let index = this.map.convert_2dTo1d(x, y);
                 this._treasure_white_list.push(index);
             }
+        }
+    }
+
+    // 宝箱の位置の壁に穴をあける
+    _dig_wall_in_treasure(){
+        for(let treasure of this._treasureList.get()){
+            this.dig_wall(treasure._position_x, treasure._position_y);
         }
     }
 
@@ -408,7 +421,7 @@ class Dungeon {
     }
     
     // mapのx, yの位置に空間を開ける
-    dig_wall(x,y){
+    dig_wall(x, y){
         let value = this.map.get_value(x, y);
         if (value == this._tile_info.Bedrock.Type) {
             return;
@@ -423,12 +436,9 @@ class Dungeon {
                 return i;
             }
         }
-
-        // このへん
     }
     
     // 岩盤以外のランダムな座標を取得
-    // 現在未使用？
     get_random_index() {
         // 岩盤以外の座標
         let x = this._get_random_range(1, (this._width - 1));
@@ -481,6 +491,8 @@ class Player {
         this._position_x = 0;
         this._position_y = 0;
 
+        this._sight_size = 5;
+
         this._make();
 
         this._stats = new Player_Stats();
@@ -489,10 +501,12 @@ class Player {
     _make() {
         console.log("player.make");
         
-        let air_index = this._dungeon.get_first_air_index();
+        let index = this._dungeon.get_random_index();
         // ToDo position.x, position.y にまとめたい
-        this._position_x = this._dungeon.map.convert_1dTo2d_x(air_index);
-        this._position_y = this._dungeon.map.convert_1dTo2d_y(air_index);
+        this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
+        this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
+        this._dungeon.dig_wall(this._position_x, this._position_y);
+        this._dungeon.update_mask(this._position_x, this._position_y, this._sight_size);
     }
     
     display() {
@@ -519,7 +533,7 @@ class Player {
             this._position_x = next_x;
             this._position_y = next_y;
             this._stats.add_walk();
-            this._dungeon.update_mask(next_x, next_y, 5); // 視界サイズ
+            this._dungeon.update_mask(next_x, next_y, this._sight_size); // 視界サイズ
 
             let is_exist_treasure = this._dungeon.is_exist_treasure(this._position_x, this._position_y)
             if (is_exist_treasure) {
@@ -624,6 +638,10 @@ class Treasure_List {
         for (let i = 0; i < this._count; i++) {
             this._treasureList.push(new Treasure(this._dungeon));
         }
+    }
+
+    get(){
+        return this._treasureList;
     }
 
     get_treasure(x, y) {
