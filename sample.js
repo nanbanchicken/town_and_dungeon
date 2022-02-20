@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/9/18
+///---- 2021/9/25
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -152,12 +152,18 @@ class Dungeon_Mask {
         this._width = w;
         this._height = h;
 
-        this._tile_info = {
-            Black: { Type: 0, Color: 'rgb(0,0,0)' },
-            Gray: { Type: 1, Color: 'rgb(150,150,150)' }
+        this._sight_info = {
+            Black: { Type: 0, Color: 'rgb(0,0,60)' },
+            Gray: { Type: 1, Color: 'rgb(150,150,150)' },
+            Transparent: { Type: 2, Color: 'rgb(0,0,0,255)'}
         };
 
-        this.mask = new MDMap(w, h, false);
+        // 前回の視界情報
+        this._prev_x = 2;
+        this._prev_y = 2;
+        this._prev_sight_patterns = []; 
+
+        this.mask = new MDMap(w, h, this._sight_info.Black.Type); 
         this._sight_pattern = new SightPattern(w, h);
     }
     
@@ -168,19 +174,26 @@ class Dungeon_Mask {
             for (let x = 0; x < this._width; x++) {
                 
                 let mask_value = this.mask.get_value(x, y);
-                if (mask_value == false) {
-                    this._draw_tile(x, y, this._tile_info.Black.Type);
+                if (mask_value == this._sight_info.Black.Type) {
+                    // 見たことのない場所
+                    this._draw_tile(x, y, this._sight_info.Black.Type);
                 }
-                else{
-                    // 見たことのある場所
-                    if (this._is_in_sight(x, y, player_x, player_y, -1)) {
-                        continue;
-                    }
-                    
+                else if(mask_value == this._sight_info.Gray.Type){
+                    // 一度見たことのある場所
                     let dungeon_value = dungeon.map.get_value(x, y);
-                    if (dungeon_value != dungeon._tile_info.Treasure.Type) {
-                        this._draw_tile(x, y, this._tile_info.Gray.Type);
+                    if (dungeon_value == dungeon._tile_info.Treasure.Type) {//???? != treasure?
+                        this._draw_tile(x, y, this._sight_info.Gray.Type);
+                    }else if(dungeon_value == dungeon._tile_info.Air.Type) {
+                        this._draw_tile(x, y, this._sight_info.Gray.Type);
                     }
+                }
+                else if(mask_value == this._sight_info.Transparent.Type){
+                    // 視界がクリアな場所
+                    // if (this._is_in_sight(x, y, player_x, player_y, -1)) {
+                    //     continue;
+                    // }
+                }else{
+                    alert('Dungeon_Mask: 変な値入ってます');
                 }
             }
         }
@@ -196,11 +209,11 @@ class Dungeon_Mask {
     }
     
     _get_tile_color(tile_type) {
-        for (let item in this._tile_info) {
-            if (this._tile_info[item].Type == tile_type)
-                return this._tile_info[item].Color;
+        for (let item in this._sight_info) {
+            if (this._sight_info[item].Type == tile_type)
+                return this._sight_info[item].Color;
         }
-        return this._tile_info.Bedrock.Color; // error
+        return this._sight_info.Bedrock.Color; // error
     }
 
     _draw_tile(x, y, tile_type) {
@@ -214,11 +227,32 @@ class Dungeon_Mask {
     // sight: 視界サイズ
     update(x, y, sight) {
         let patterns = this._sight_pattern.get_pattern(x, y, 'cross', sight);
-        // [[-1, 0], [-1,-1],[0,-1],,,[0,1]] 視界あける位置リスト（補正値）
-        console.log(patterns);
-        for(let pattern of patterns){
-            this.mask.update(x + pattern[0], y + pattern[1], true);
+        this.fill_prev_sight();
+        this.fill_sight_pattern(x, y, patterns);
+        this.store_sight_info(x, y, patterns);
+    }
+
+
+    // 前回の視界（透明）を灰色で埋める
+    fill_prev_sight(){
+        for(let pattern of this._prev_sight_patterns){
+            this.mask.update(this._prev_x + pattern[0], this._prev_y + pattern[1], this._sight_info.Gray.Type);
         }
+    }
+
+    // 視界範囲を透明で塗りつぶす
+    fill_sight_pattern(x, y, patterns){
+        // [[-1, 0], [-1,-1],[0,-1],,,[0,1]] 視界あける位置リスト（補正値）
+        for(let pattern of patterns){
+            this.mask.update(x + pattern[0], y + pattern[1], this._sight_info.Transparent.Type);
+        }
+    }
+
+    // 視界情報を保管
+    store_sight_info(x, y, patterns){
+        this._prev_x = x;
+        this._prev_y = y;
+        this._prev_sight_patterns = patterns;
     }
 }
 
