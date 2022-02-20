@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2021/12/18
+///---- 2022/1/22
 class MDMath {
     // 固定の方向に曲げてやる
     //let RotateRight = [[0, -1], [1, 0]]
@@ -1036,10 +1036,12 @@ class Stone{
 
     // 2021/12/18 うごいた！
     // leftDistance にバグあり。１つ遠くまで飛ぶよ。
+    // 2022/1/22 なおったよ！(置くのをあとにしたよ)
     execute(dungeon, position, direction){
         console.log('Stone.execute : ')
         this.position = position;
         this.direction = direction;
+        let watchDogCount = 0; // 進んだ距離 反射がループしているか監視
 
         while (this.leftDistance >= 0) {
             let next = {
@@ -1047,18 +1049,19 @@ class Stone{
                 y: this.position.y + this.direction.y
             };
     
-            if(this.leftDistance == 0){
-                // 石を配置
-                console.log('石を配置');
-                dungeon.add_stone(next.x, next.y, this);
-                dungeon.display_stone(next.x, next.y, this);
-                return;
-            }
+            // console.log(`残り距離: ${this.leftDistance}`);
+            // python f"{hoge}"
+            // python f"{1} {2} {1}".format(hoge, fuga)
+            // C# $"{hoge}"
+            // C "%S %S",hoge, huga
+            // rust "{} {}",hoge, huga
+            // Fortran 11 hoge
     
             let nextTile = dungeon.map.get_value(next.x, next.y);
             if(nextTile == dungeon._tile_info.Air.Type){
                 this.leftDistance -= 1;
                 this.position = {x: next.x, y: next.y};
+                watchDogCount = 0;
                 console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
             }else {
                 switch (nextTile) {
@@ -1066,11 +1069,22 @@ class Stone{
                     case dungeon._tile_info.Wall.Type:
                     case dungeon._tile_info.R.Type:
                         // 固定の方向右に曲げてやる
-                        this.direction = my_mdMath.rotateRight(this.direction);
+                        let newDirection = my_mdMath.rotateRight(this.direction);
+                        this.direction = newDirection;
+                        watchDogCount+=1;
+                        if(this.IsRefrectLoop(watchDogCount)){
+                            console.log("石の反射が無限ループ");
+                            return;
+                        }
                         break;
                     case dungeon._tile_info.L.Type:
                         // 左に曲げる
                         this.direction = my_mdMath.rotateLeft(this.direction);
+                        watchDogCount+=1;
+                        if(this.IsRefrectLoop(watchDogCount)){
+                            console.log("石の反射が無限ループ");
+                            return;
+                        }
                         break;
                     case dungeon._tile_info.Enemy.Type:
                     case dungeon._tile_info.Player.Type:
@@ -1084,8 +1098,21 @@ class Stone{
                         break;
                 }
     
-            }    
+            }
+
+            if(this.leftDistance == 0){
+                // 石を配置
+                dungeon.add_stone(next.x, next.y, this);
+                dungeon.display_stone(next.x, next.y, this);
+                return;
+            }
         }
+    }
+
+    // 反射がループしているか
+    IsRefrectLoop(dogCount){
+        let limit = 4;
+        return dogCount > limit;
     }
 }
 
