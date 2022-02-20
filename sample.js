@@ -3,7 +3,8 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/7/31
+///---- 2021/8/7
+
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -28,7 +29,7 @@ class Dungeon {
             Player: { Type: 2, Color: 'rgb(255,0,0)' },
             Treasure: { Type: 3, Color: 'rgb(0,255,0)'}
         };
-              
+
         // 0: 空間
         // 1: 壁
         // 2: プレイヤー
@@ -46,6 +47,7 @@ class Dungeon {
         this._init_map();
         this._make_dungeon();
         this._create_treasure_white_list();
+        this._treasure_list = new Treasure_List(this, 10);
     }
 
     _init_map() { 
@@ -76,6 +78,10 @@ class Dungeon {
     display_player(x, y) {
         this._draw_tile(x, y, this._tile_info.Player.Type);
     }
+
+    display_treasures() {
+        this._treasure_list.display_treasures();
+    }
     
     // 宝箱を表示
     display_treasure(x, y) {
@@ -83,17 +89,12 @@ class Dungeon {
     }
 
     _get_tile_color(tile_type) {
-        if (tile_type == this._tile_info.Air.Type) {
-            return this._tile_info.Air.Color;
-        } else if (tile_type == this._tile_info.Bedrock.Type) {
-            return this._tile_info.Bedrock.Color;
-        } else if (tile_type == this._tile_info.Wall.Type) {
-            return this._tile_info.Wall.Color;
-        } else if (tile_type == this._tile_info.Player.Type) {
-            return this._tile_info.Player.Color;
-        } else if (tile_type == this._tile_info.Treasure.Type) {
-            return this._tile_info.Treasure.Color;
+        for (let item in this._tile_info) {
+            if (this._tile_info[item].Type == tile_type)
+                return this._tile_info[item].Color;
         }
+        return this._tile_info.Bedrock.Color; // error
+   
     }
 
     _draw_tile(x, y, tile_type) {
@@ -232,7 +233,20 @@ class Dungeon {
         let value = this._get_map(x, y);
         return (value == this._tile_info.Wall.Type);
     }
+
+    // 宝箱関係
+    is_exist_treasure(x, y) {
+        return this._treasure_list.is_exist_treasure(x, y);
+    }
     
+    is_opened_treasure(x, y) {
+        return this._treasure_list.is_opened_treasure(x, y);
+    }
+    
+    open_treasure(x, y) {
+        return this._treasure_list.open_treasure(x, y);
+    }
+
 }
 //----
 
@@ -242,6 +256,8 @@ class Player {
         this._dungeon = my_dungeon;
         
         this._make_player();
+
+        this._stats = new Player_Stats();
     }
 
     _make_player() {
@@ -258,6 +274,7 @@ class Player {
 
         // this._dungeon.display_dungeon();
         this._dungeon.display_player(this._position_x, this._position_y);
+        this._stats.display_player_stats();
     }
 
     // dir_x, dir_y: 移動量
@@ -270,11 +287,57 @@ class Player {
         } else if (this._dungeon.is_wall(next_x, next_y)) {
             // 行き先が壁の場合は掘る(移動はなし)
             this._dungeon.dig_wall(next_x, next_y);
+            this._stats.add_dig_wall();
         } else {
             // 進む
             this._position_x = next_x;
-            this._position_y = next_y;    
+            this._position_y = next_y;
+            this._stats.add_walk();
+
+            let is_exist_treasure = this._dungeon.is_exist_treasure(this._position_x, this._position_y)
+            if (is_exist_treasure) {
+                
+                let is_opened_treasure = this._dungeon.is_opened_treasure(this._position_x, this._position_y);
+                if (!is_opened_treasure) {
+                    this._dungeon.open_treasure(this._position_x, this._position_y);
+                    this._stats.add_pickup_treasure();
+                }
+            }
         }
+    }
+}
+
+class Player_Stats {
+
+    constructor() {
+        this._text_size = 20;
+        this._text_color = 'rgb(255,126,0)'; // オレンジ
+        
+        this._walk = 0;
+        this._dig_wall = 0;
+        this._pickup_treasures = 0;
+    }
+    
+    add_walk() {
+        this._walk += 1;
+    }
+
+    add_dig_wall() {
+        this._dig_wall += 1;
+    }
+
+    add_pickup_treasure() {
+        this._pickup_treasures += 1;
+    }
+    
+    display_player_stats() {
+        textAlign(LEFT, TOP);
+        textSize(this._text_size);
+        fill(this._text_color);
+
+        text("歩数: " + this._walk, 0, 0);
+        text("掘った数: " + this._dig_wall, 0, this._text_size);
+        text("拾った宝箱: " + this._pickup_treasures, 0, this._text_size * 2);
     }
 }
 
@@ -282,6 +345,8 @@ class Treasure {
 
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
+        
+        this._opened = false;
 
         this._make_treasure();
     }
@@ -294,6 +359,19 @@ class Treasure {
 
         this._position_x = this._dungeon.convert_1dTo2d_x(index);
         this._position_y = this._dungeon.convert_1dTo2d_y(index);
+    }
+    
+    is_exist_treasure(x, y) {
+        let is_exist = this._position_x == x && this._position_y == y;
+        return is_exist;
+    }
+
+    is_opened_treasure() {
+        return this._opened;
+    }
+    
+    open_treasure() {
+        this._opened = true;
     }
 
     display_treasure() {
@@ -312,11 +390,46 @@ class Treasure_List {
 
         this._make_treasures();
     }
-    
+
     _make_treasures() {
         for (let i = 0; i < this._count; i++) {
             this._treasures.push(new Treasure(this._dungeon));
         }
+    }
+
+    get_treasure(x, y) {
+        for (let i = 0; i < this._count; i++) {
+            if (this._treasures[i].is_exist_treasure(x, y)) {
+                return this._treasures[i];
+            }
+        }
+
+        return null;
+    }
+
+    is_exist_treasure(x, y) {
+        let treasure = this.get_treasure(x, y);
+        if (treasure == null)
+            return false;
+        
+        return true;
+    }
+    
+    is_opened_treasure(x, y) {
+        let treasure = this.get_treasure(x, y);
+        if (treasure == null)
+            return false;
+        
+        return treasure.is_opened_treasure();
+    }
+    
+    open_treasure(x, y) {
+        let treasure = this.get_treasure(x, y);
+        if (treasure == null) {
+            return false;
+        }
+
+        treasure.open_treasure();
     }
     
     display_treasures() {
@@ -327,12 +440,11 @@ class Treasure_List {
 }
 
 
-//-------
+//------- ------ main 
 
 let canvasSize = 600;
 let my_dungeon;
 let my_player;
-let my_treasure_list;
 
 function setup(){
     canvasSize=windowHeight;
@@ -345,8 +457,6 @@ function setup(){
     my_dungeon = new Dungeon(16, 16, 5, room_config);
 
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
-    
-    my_treasure_list = new Treasure_List(my_dungeon, 10);
     
     display_all();
 }
@@ -373,6 +483,7 @@ function display_all() {
     my_dungeon.display_dungeon();
     // my_objects.display_objects();
     // my_enemy.display_enemy();
-    my_treasure_list.display_treasures();
+    // my_treasure_list.display_treasures();
+    my_dungeon.display_treasures();
     my_player.display_player();
 }
