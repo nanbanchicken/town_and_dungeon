@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/7/24
+///---- 2021/7/31
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -20,12 +20,13 @@ class Dungeon {
         this._height = height;
         this._room_count = room_count;
         this._room_config = room_config;
-
+        
         this._tile_info = {
             Bedrock: {Type: -1, Color: 'rgb(0,0,0)'},
             Air: { Type: 0, Color: 'rgb(255,255,255)' },
             Wall: { Type: 1, Color: 'rgb(100,100,100)' },
-            Player: { Type: 2, Color: 'rgb(255,0,0)' }
+            Player: { Type: 2, Color: 'rgb(255,0,0)' },
+            Treasure: { Type: 3, Color: 'rgb(0,255,0)'}
         };
               
         // 0: 空間
@@ -44,6 +45,7 @@ class Dungeon {
 
         this._init_map();
         this._make_dungeon();
+        this._create_treasure_white_list();
     }
 
     _init_map() { 
@@ -74,19 +76,36 @@ class Dungeon {
     display_player(x, y) {
         this._draw_tile(x, y, this._tile_info.Player.Type);
     }
+    
+    // 宝箱を表示
+    display_treasure(x, y) {
+        this._draw_tile(x, y, this._tile_info.Treasure.Type);
+    }
 
-    _draw_tile(x, y, tile_type)  {
-        if (tile_type == this._tile_info.Air.Type)  {
-            fill(this._tile_info.Air.Color);
-        } else if (tile_type == this._tile_info.Bedrock.Type){
-            fill(this._tile_info.Bedrock.Color);
-        } else if (tile_type == this._tile_info.Wall.Type){
-            fill(this._tile_info.Wall.Color);
+    _get_tile_color(tile_type) {
+        if (tile_type == this._tile_info.Air.Type) {
+            return this._tile_info.Air.Color;
+        } else if (tile_type == this._tile_info.Bedrock.Type) {
+            return this._tile_info.Bedrock.Color;
+        } else if (tile_type == this._tile_info.Wall.Type) {
+            return this._tile_info.Wall.Color;
         } else if (tile_type == this._tile_info.Player.Type) {
-            fill(this._tile_info.Player.Color);
+            return this._tile_info.Player.Color;
+        } else if (tile_type == this._tile_info.Treasure.Type) {
+            return this._tile_info.Treasure.Color;
         }
-        
-        rect(x*20, y*20, 20, 20);
+    }
+
+    _draw_tile(x, y, tile_type) {
+        let color = this._get_tile_color(tile_type);
+        fill(color);
+
+        if (tile_type == this._tile_info.Player.Type) {
+            ellipseMode(CORNER);
+            ellipse(x * 20, y * 20, 20, 20);
+        }  else {
+            rect(x * 20, y * 20, 20, 20);
+        }
     }
 
     // 1次元の位置を2次元の位置に変換(x)
@@ -139,6 +158,18 @@ class Dungeon {
         }
     }
 
+    // 宝箱のホワイトリスト
+    _create_treasure_white_list() {
+        this._treasure_white_list = [];
+        
+        for (let y = 1; y < this._height - 1; y++) {
+            for (let x = 1; x < this._width - 1; x++) {
+                let index = this._convert_2dTo1d(x, y);
+                this._treasure_white_list.push(index);
+            }
+        }
+    }
+
     // 2 つの値の間のランダムな整数を得る min以上、max未満
     _get_random_range(min, max) {
         min = Math.ceil(min);
@@ -170,6 +201,26 @@ class Dungeon {
                 return i;
             }
         }
+    }
+    
+    // 岩盤以外のランダムな座標を取得
+    get_random_index() {
+        // 岩盤以外の座標
+        let x = this._get_random_range(1, (this._width - 1));
+        let y = this._get_random_range(1, (this._height - 1));
+
+        let index = this._convert_2dTo1d(x, y);
+        return index;
+    }
+
+        // 宝箱の座標をランダムに取得(被りなし)
+    get_random_treasure_index() {
+        let white_list_index = this._get_random_range(0, this._treasure_white_list.length);
+        let map_index = this._treasure_white_list[white_list_index];
+        // 使用済みの要素を削除
+        this._treasure_white_list.splice(white_list_index, 1);
+        
+        return map_index;
     }
 
     is_bedrock(x, y) {
@@ -227,12 +278,61 @@ class Player {
     }
 }
 
+class Treasure {
+
+    constructor(my_dungeon) {
+        this._dungeon = my_dungeon;
+
+        this._make_treasure();
+    }
+
+    _make_treasure() {
+        console.log("make_treasure");
+
+        // ランダム位置に配置(岩盤以外)
+        let index = this._dungeon.get_random_treasure_index();
+
+        this._position_x = this._dungeon.convert_1dTo2d_x(index);
+        this._position_y = this._dungeon.convert_1dTo2d_y(index);
+    }
+
+    display_treasure() {
+        console.log("display_treasure");
+
+        this._dungeon.display_treasure(this._position_x, this._position_y);
+    }
+}
+
+class Treasure_List {
+
+    constructor(my_dungeon, count) {
+        this._dungeon = my_dungeon;
+        this._count = count;
+        this._treasures = [];
+
+        this._make_treasures();
+    }
+    
+    _make_treasures() {
+        for (let i = 0; i < this._count; i++) {
+            this._treasures.push(new Treasure(this._dungeon));
+        }
+    }
+    
+    display_treasures() {
+        for (let i = 0; i < this._count; i++) {
+            this._treasures[i].display_treasure();
+        }
+    }
+}
+
 
 //-------
 
 let canvasSize = 600;
 let my_dungeon;
 let my_player;
+let my_treasure_list;
 
 function setup(){
     canvasSize=windowHeight;
@@ -243,10 +343,12 @@ function setup(){
     room_config = new Room_Config(2, 2, 4, 4);
     
     my_dungeon = new Dungeon(16, 16, 5, room_config);
-    my_dungeon.display_dungeon();
 
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
-    my_player.display_player();
+    
+    my_treasure_list = new Treasure_List(my_dungeon, 10);
+    
+    display_all();
 }
  
 function draw(){
@@ -271,5 +373,6 @@ function display_all() {
     my_dungeon.display_dungeon();
     // my_objects.display_objects();
     // my_enemy.display_enemy();
+    my_treasure_list.display_treasures();
     my_player.display_player();
 }
