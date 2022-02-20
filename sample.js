@@ -1,9 +1,9 @@
 // syumino programming
 // https://www.youtube.com/channel/UClZj9tdR1TRkxglnaA55pJA
 // twitter @Suminoprogramm1
-// Nanban and Nishino Junji
+// Nanban and Jun
 
-///---- 2021/10/30
+///---- 2021/11/6
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -543,6 +543,82 @@ class Dungeon {
 }
 //----
 
+class MDObject{
+
+    // color: str 'rgb(0,0,60)'
+    constructor(my_dungeon, color) {
+        this._dungeon = my_dungeon;
+        
+        this._position_x = 0;
+        this._position_y = 0;
+
+        this._color = null;
+    }
+
+    make() {
+    }
+
+    is_exist(x, y) {
+        let is_exist = (this._position_x == x && this._position_y == y);
+        return is_exist;
+    }
+    
+    display() {
+        console.log("MDObject.display");
+
+        // 色情報を一緒に与えられるといいな
+        // this._dungeon.display(this._position_x, this._position_y, this.color);
+    }
+}
+
+class MDObjectList{
+
+    constructor(my_dungeon, count, md_object) {
+        this._dungeon = my_dungeon;
+        this._count = count;
+        this._object_list = [];
+
+        this._make(md_object);
+    }
+
+    // Enemyとかをコピーできるはず
+    _make(md_object) {
+        for (let i = 0; i < this._count; i++) {
+            new_md_object = Object.assign({}, md_object);
+            new_md_object.make();
+            this._object_list.push(new_md_object);
+        }
+    }
+
+    get(){
+        return this._object_list;
+    }
+
+    get_md_object(x, y) {
+        for (let i = 0; i < this._count; i++) {
+            if (this._object_list[i].is_exist(x, y)) {
+                return this._object_list[i];
+            }
+        }
+
+        return null;
+    }
+
+    is_exist( x, y) {
+        let md_object = this.get_md_object(x, y);
+        if (md_object == null)
+            return false;
+        
+        return true;
+    }
+    
+    display() {
+        for (let i = 0; i < this._count; i++) {
+            this._object_list[i].display();
+        }
+    }
+}
+
 class Player {
 
     constructor(my_dungeon) {
@@ -657,15 +733,12 @@ class Player_Stats {
     }
 }
 
-class Treasure {
+class Treasure extends MDObject{
 
     constructor(my_dungeon) {
-        this._dungeon = my_dungeon;
-        
-        this._position_x = 0;
-        this._position_y = 0;
-        this._opened = false;
+        super(my_dungeon, null);
 
+        this._opened = false;
         this._make();
     }
 
@@ -678,11 +751,6 @@ class Treasure {
         this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
         this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
     }
-    
-    is_exist(x, y) {
-        let is_exist = this._position_x == x && this._position_y == y;
-        return is_exist;
-    }
 
     is_opened() {
         return this._opened;
@@ -692,7 +760,7 @@ class Treasure {
         this._opened = true;
     }
 
-    display() {
+    display(){
         console.log("treasure.display");
 
         this._dungeon.display_treasure(this._position_x, this._position_y);
@@ -763,16 +831,13 @@ class Treasure_List {
 
 //------ Enemy
 
-class Enemy {
+class Enemy extends MDObject {
 
     constructor(my_dungeon) {
-        this._dungeon = my_dungeon;
-        
-        this._position_x = 0;
-        this._position_y = 0;
+        super(my_dungeon, null);
         // 種族とかでhpとか制御したい
         // hp以外の属性も欲しい(火属性に弱いとか)
-        this._hp = 5; 
+        this._hp = 5;
 
         this._make();
     }
@@ -787,11 +852,6 @@ class Enemy {
         this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
     }
     
-    is_exist(x, y) {
-        let is_exist = this._position_x == x && this._position_y == y;
-        return is_exist;
-    }
-
     attack() {
         console.log("enemy.attack 未実装");
     }
@@ -808,10 +868,10 @@ class Enemy {
         return this._hp > 0;
     }
 
-    display() {
+    display(){
         console.log("enemy.display");
 
-        if(this.is_alive()){
+        if(this.is_alive){
             this._dungeon.display_enemy(this._position_x, this._position_y);
         }
     }
@@ -883,88 +943,6 @@ class Enemy_List {
     }
 }
 
-class MDObject{
-
-    constructor(my_dungeon) {
-        this._dungeon = my_dungeon;
-        
-        this._position_x = 0;
-        this._position_y = 0;
-
-        this._is_visible = true;
-    }
-
-    make() {
-        console.log("MDObject.make");
-
-        // ランダム位置に配置(岩盤以外)
-        let index = this._dungeon.get_random_mdobject_index();
-
-        this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
-        this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
-    }
-
-    is_exist(x, y) {
-        let is_exist = (this._position_x == x && this._position_y == y);
-        return is_exist;
-    }
-    
-    display() {
-        console.log("MDObjectController.display");
-
-        if(this._is_visible){
-            this._dungeon.display(this._position_x, this._position_y);
-        }
-    }
-}
-
-class MDObjectList{
-
-    constructor(my_dungeon, count, md_object) {
-        this._dungeon = my_dungeon;
-        this._count = count;
-        this._object_list = [];
-
-        this._make(md_object);
-    }
-
-    // Enemyとかをコピーできるはず
-    _make(md_object) {
-        for (let i = 0; i < this._count; i++) {
-            new_md_object = Object.assign({}, md_object);
-            new_md_object.make();
-            this._object_list.push(new_md_object);
-        }
-    }
-
-    get(){
-        return this._object_list;
-    }
-
-    get_md_object(x, y) {
-        for (let i = 0; i < this._count; i++) {
-            if (this._object_list[i].is_exist(x, y)) {
-                return this._object_list[i];
-            }
-        }
-
-        return null;
-    }
-
-    is_exist( x, y) {
-        let md_object = this.get_md_object(x, y);
-        if (md_object == null)
-            return false;
-        
-        return true;
-    }
-    
-    display() {
-        for (let i = 0; i < this._count; i++) {
-            this._object_list[i].display();
-        }
-    }
-}
 
 // 10/30 コントローラはモデルにまとめました
 //class MDObjectController{
@@ -1016,6 +994,33 @@ class MDObjectList{
 //     }
 // }
 
+class BaseClass {
+    constructor(name){
+        this.name = name;
+    }
+
+    get_name(){
+        return this.name;
+    }
+}
+
+class MainClass extends BaseClass{
+    constructor(name, age){
+        super(name);
+
+        this.age = age;
+    }
+
+    output_log(){
+        console.log(this.name);
+        console.log(this.age);
+    }
+
+    output_name(){
+        console.log(this.get_name());
+    }
+}
+
 //------- ------ main 
 
 let canvasSize = 600;
@@ -1038,6 +1043,14 @@ function setup(){
     my_sight_pattern = new SightPattern(16, 16);
     
     display_all();
+
+    // 継承が使えるかな？
+//    var test = new MainClass('hoge', 30);
+//    console.log('debug1:');
+//    test.output_log();
+//    console.log('debug2:');
+//    test.output_name();
+//    console.log(test.get_name());
 }
  
 function draw(){
