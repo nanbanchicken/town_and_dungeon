@@ -3,13 +3,65 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/8/21
+///---- 2021/8/28
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
         this.min_height = min_height;
         this.max_width = max_width;
         this.max_height = max_height;
+    }
+}
+
+class MDMap { // [M]achi to [D]ungen no [Map]
+    constructor(width, height, default_fill) {
+        this._width = width;
+        this._height = height;
+        this._default_fill = default_fill;
+
+        // this._tile_info = {
+        //     Black: { Type: 0, Color: 'rgb(0,0,0)' },
+        //     Gray: { Type: 1, Color: 'rgb(150,150,150)' }
+        // };
+
+        this.map = [];
+        
+        this._init();
+    }
+    
+    _init() {
+        // 最初は全部見えない
+        this.map = new Array(this._width * this._height).fill(this._default_fill);
+    }
+
+    update(x, y, value) {
+        let i = this.convert_2dTo1d(x, y);
+        this.map[i] = value;
+    }
+
+    // 1次元の位置を2次元の位置に変換(x)
+    convert_1dTo2d_x(index) {
+        return index % this._width;
+    }
+
+    // 1次元の位置を2次元の位置に変換(y)
+    convert_1dTo2d_y(index) {
+        return Math.floor(index / this._width);
+    }
+
+    // 2次元の位置(x, y)を1次元の位置に変換
+    convert_2dTo1d(x, y) {
+        return y * this._width + x;
+    }
+    
+    // (x, y)の値を取得
+    get_value(x, y) {
+        var index = this.convert_2dTo1d(x, y);
+        return (this.map[index]);
+    }
+
+    get_value_index(i) {
+        return (this.map[i]);
     }
 }
 
@@ -24,14 +76,7 @@ class Dungeon_Mask {
             Gray: { Type: 1, Color: 'rgb(150,150,150)' }
         };
 
-        this.mask = [];
-        
-        this._init();//init_mask->init
-    }
-        
-    _init() {
-        // 最初は全部見えない
-        this.mask = new Array(this._width * this._height).fill(false);
+        this.mask = new MDMap(width, height, false);
     }
     
     display(dungeon, player_x, player_y) {
@@ -40,7 +85,7 @@ class Dungeon_Mask {
         for (let y = 0; y < this._height; y++) {
             for (let x = 0; x < this._width; x++) {
                 
-                let mask_value = this.get_value(x, y);
+                let mask_value = this.mask.get_value(x, y);
                 if (mask_value == false) {
                     this._draw_tile(x, y, this._tile_info.Black.Type);
                 }
@@ -50,7 +95,7 @@ class Dungeon_Mask {
                         continue;
                     }
                     
-                    let dungeon_value = dungeon.get_value(x, y);
+                    let dungeon_value = dungeon.map.get_value(x, y);
                     if (dungeon_value != dungeon._tile_info.Treasure.Type) {
                         this._draw_tile(x, y, this._tile_info.Gray.Type);
                     }
@@ -86,31 +131,8 @@ class Dungeon_Mask {
     // 視界を広げる
     // sight: 視界
     update(x, y, sight) {
-        let i = this._convert_2dTo1d(x, y);
-        this.mask[i] = true;
+        this.mask.update(x, y, true);
     }
-    
-    // 1次元の位置を2次元の位置に変換(x)
-    convert_1dTo2d_x(index) {
-        return index % this._width;
-    }
-
-    // 1次元の位置を2次元の位置に変換(y)
-    convert_1dTo2d_y(index) {
-        return Math.floor(index / this._width);
-    }
-
-    // 2次元の位置(x, y)を1次元の位置に変換
-    _convert_2dTo1d(x, y) {
-        return y * this._width + x;
-    }
-    
-    // (x, y)のマスクの値を取得
-    get_value(x, y) {
-        var index = this._convert_2dTo1d(x, y);
-        return (this.mask[index]);
-    }
-
 }
 
 class Dungeon { 
@@ -129,9 +151,9 @@ class Dungeon {
             Treasure: { Type: 3, Color: 'rgb(0,255,0)'} // 宝箱
         };
 
-        this.map = [];
+        this.map = null;
 
-        this._mask = new Dungeon_Mask(width, height);
+        this._mask = new Dungeon_Mask(this._width, this._height);
         this._init();
         this._make();
         this._create_treasure_white_list();
@@ -140,7 +162,7 @@ class Dungeon {
 
     _init() { 
         // 最初は全部壁で埋める
-        this.map = new Array(this._width * this._height).fill(this._tile_info.Wall.Type);
+        this.map = new MDMap(this._width, this._height, this._tile_info.Wall.Type);
 
         // 岩盤で周囲を囲む
         for (let y = 0; y < this._height; y++) {
@@ -165,7 +187,7 @@ class Dungeon {
         
         for (let y = 0; y < this._height; y++){
             for(let x=0; x < this._width; x++){
-                this._draw_tile(x, y, this.get_value(x, y));
+                this._draw_tile(x, y, this.map.get_value(x, y));
             }
         }
     }
@@ -205,26 +227,7 @@ class Dungeon {
         }
     }
 
-    // 1次元の位置を2次元の位置に変換(x)
-    convert_1dTo2d_x(index) {
-        return index % this._width;
-    }
-
-    // 1次元の位置を2次元の位置に変換(y)
-    convert_1dTo2d_y(index) {
-        return Math.floor(index / this._width);
-    }
-
-    // 2次元の位置(x, y)を1次元の位置に変換
-    _convert_2dTo1d(x, y) {
-        return y * this._width + x;
-    }
-
-    // (x, y)のマップの値を取得
-    get_value(x, y)  {
-        var index = this._convert_2dTo1d(x, y);
-        return (this.map[index]);
-    }
+    /* 部屋関係 */
 
     _make(){
         this._make_room(this._room_count);
@@ -255,17 +258,21 @@ class Dungeon {
         }
     }
 
+    /* 宝箱関係 */
+
     // 宝箱のホワイトリスト
     _create_treasure_white_list() {
         this._treasure_white_list = [];
         
         for (let y = 1; y < this._height - 1; y++) {
             for (let x = 1; x < this._width - 1; x++) {
-                let index = this._convert_2dTo1d(x, y);
+                let index = this.map.convert_2dTo1d(x, y);
                 this._treasure_white_list.push(index);
             }
         }
     }
+
+    /* その他 */
 
     // 2 つの値の間のランダムな整数を得る min以上、max未満
     _get_random_range(min, max) {
@@ -276,41 +283,41 @@ class Dungeon {
 
     // mapのx, yの位置を岩盤で埋める
     fill_bedrock(x, y) {
-        var index = this._convert_2dTo1d(x, y);
-        this.map[index] = this._tile_info.Bedrock.Type;
+        this.map.update(x, y, this._tile_info.Bedrock.Type);
     }
     
     // mapのx, yの位置に空間を開ける
     dig_wall(x,y){
-        let value = this.get_value(x, y);
+        let value = this.map.get_value(x, y);
         if (value == this._tile_info.Bedrock.Type) {
             return;
         }
-        
-        var index = this._convert_2dTo1d(x, y);
-        this.map[index] = this._tile_info.Air.Type;
+        this.map.update(x, y, this._tile_info.Air.Type);
     }
 
     // 最初の空間座標を取得する
     get_first_air_index() {
         for (let i = 0; i < this._width * this._height; i++) {
-            if (this.map[i] == this._tile_info.Air.Type) {
+            if (this.map.get_value_index(i) == this._tile_info.Air.Type) {
                 return i;
             }
         }
+
+        // このへん
     }
     
     // 岩盤以外のランダムな座標を取得
+    // 現在未使用？
     get_random_index() {
         // 岩盤以外の座標
         let x = this._get_random_range(1, (this._width - 1));
         let y = this._get_random_range(1, (this._height - 1));
 
-        let index = this._convert_2dTo1d(x, y);
+        let index = this.map.convert_2dTo1d(x, y);
         return index;
     }
 
-        // 宝箱の座標をランダムに取得(被りなし)
+    // 宝箱の座標をランダムに取得(被りなし)
     get_random_treasure_index() {
         let white_list_index = this._get_random_range(0, this._treasure_white_list.length);
         let map_index = this._treasure_white_list[white_list_index];
@@ -321,12 +328,12 @@ class Dungeon {
     }
 
     is_bedrock(x, y) {
-        let value = this.get_value(x, y);
+        let value = this.map.get_value(x, y);
         return (value == this._tile_info.Bedrock.Type);
     }
     
     is_wall(x, y) {
-        let value = this.get_value(x, y);
+        let value = this.map.get_value(x, y);
         return (value == this._tile_info.Wall.Type);
     }
 
@@ -362,9 +369,9 @@ class Player {
         console.log("player.make");
         
         let air_index = this._dungeon.get_first_air_index();
-
-        this._position_x = this._dungeon.convert_1dTo2d_x(air_index);
-        this._position_y = this._dungeon.convert_1dTo2d_y(air_index);
+        // ToDo position.x, position.y にまとめたい
+        this._position_x = this._dungeon.map.convert_1dTo2d_x(air_index);
+        this._position_y = this._dungeon.map.convert_1dTo2d_y(air_index);
     }
     
     display() {
@@ -377,7 +384,6 @@ class Player {
 
     // dir_x, dir_y: 移動量
     move(dir_x, dir_y) {
-        console.log('player.move :' + dir_x + ':'+dir_y);
         let next_x = this._position_x + dir_x;
         let next_y = this._position_y + dir_y;
 
@@ -392,7 +398,7 @@ class Player {
             this._position_x = next_x;
             this._position_y = next_y;
             this._stats.add_walk();
-            this._dungeon.update_mask(next_x, next_y, -1);
+            this._dungeon.update_mask(next_x, next_y, -1); // -1は視界(仮の値)
 
             let is_exist_treasure = this._dungeon.is_exist_treasure(this._position_x, this._position_y)
             if (is_exist_treasure) {
@@ -459,8 +465,8 @@ class Treasure {
         // ランダム位置に配置(岩盤以外)
         let index = this._dungeon.get_random_treasure_index();
 
-        this._position_x = this._dungeon.convert_1dTo2d_x(index);
-        this._position_y = this._dungeon.convert_1dTo2d_y(index);
+        this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
+        this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
     }
     
     is_exist(x, y) {
@@ -556,7 +562,7 @@ function setup(){
 
     room_config = new Room_Config(2, 2, 4, 4);
     
-    my_dungeon = new Dungeon(16, 16, 5, room_config, 50);
+    my_dungeon = new Dungeon(16, 16, 5, room_config, 10);
 
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
     
