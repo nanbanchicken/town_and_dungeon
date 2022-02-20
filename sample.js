@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/2/12
+///---- 2022/2/19
 
 class MDMath {
     // 固定の方向に曲げてやる
@@ -158,6 +158,7 @@ class MDMap { // [M]achi to [D]ungen no [Map]
         //     Gray: { Type: 1, Color: 'rgb(150,150,150)' }
         // };
 
+        // タイルタイプ(int)を保持
         this.map = [];
         
         this._init();
@@ -192,11 +193,11 @@ class MDMap { // [M]achi to [D]ungen no [Map]
     // (x, y)の値を取得
     get_value(x, y) {
         var index = this.convert_2dTo1d(x, y);
-        return (this.map[index]);
+        return this.map[index];
     }
 
     get_value_index(i) {
-        return (this.map[i]);
+        return this.map[i];
     }
 }
 
@@ -383,9 +384,18 @@ class Dungeon {
 
     get_value(x, y){
         // TODO
-        // dungeon.map, enemy_list, treasure_list, magic_stone_listを参照して値を返す
-        // これはenemy, treasureを見てない
-        // magic_stone_listはまだない(マップに値を直接挿入している)
+        // mapオブジェクトと、enemy, treasure の優先度を考える
+        //
+        // 済 dungeon.map, enemy_list, treasure_list, magic_stone_listを参照して値を返す
+        // 済 これはenemy, treasureを見てない
+        // 済 magic_stone_listはまだない(マップに値を直接挿入している)
+        if(this._treasureList.is_exist_treasure(x, y)){
+            return this._tile_info.Treasure.Type;
+        }
+        else if(this._enemyList.is_exist_enemy(x, y)){
+            return this._tile_info.Enemy.Type;
+        }
+
         return this.map.get_value(x, y);
     }
 
@@ -816,6 +826,8 @@ class Player_Stats {
         text("掘った数: " + this._dig_wall, 0, this._text_size);
         text("拾った宝箱: " + this._pickup_treasures, 0, this._text_size * 2);
         text("倒した敵: " + this._kill_enemies, 0, this._text_size * 3);
+        // テスト用に追加
+        text("石の飛距離: " + stone_distance, 0, this._text_size * 4);
     }
 }
 
@@ -1140,7 +1152,7 @@ class Stone{
                 y: this.position.y + this.direction.y
             };
     
-            let nextTile = dungeon.map.get_value(next.x, next.y);
+            let nextTile = dungeon.get_value(next.x, next.y);
             console.log(`反射ありの経路計算 次のタイル: ${nextTile}`);
             switch (nextTile) {
                 case dungeon._tile_info.Air.Type:
@@ -1154,6 +1166,8 @@ class Stone{
                 case dungeon._tile_info.Wall.Type:
                 case dungeon._tile_info.R.Type:
                 case dungeon._tile_info.B.Type:
+                case dungeon._tile_info.Enemy.Type:
+                case dungeon._tile_info.Treasure.Type:
                     // 将来的に破壊石はマップに配置されない
                     // 固定の方向= 右に曲げてやる
                     let newDirection = my_mdMath.rotateRight(this.direction);
@@ -1173,12 +1187,8 @@ class Stone{
                         return;
                     }
                     break;
-                case dungeon._tile_info.Enemy.Type:
                 case dungeon._tile_info.Player.Type:
                     // ブレイクさせる
-                    break;
-                case dungeon._tile_info.Treasure.Type:
-                    // 貫通させたい
                     break;
                 default:
                     console.log('Stone::calc_route 次タイルの判定に失敗しました。');
@@ -1190,6 +1200,7 @@ class Stone{
 
         if(this.property == 'B')
         {
+            let nextTile = null;
             while(true){
                 // 破壊石 直線で何かに当たるまで経路計算
                 let next = {
@@ -1197,7 +1208,7 @@ class Stone{
                     y: this.position.y + this.direction.y
                 };
 
-                let nextTile = dungeon.map.get_value(next.x, next.y);
+                nextTile = dungeon.get_value(next.x, next.y);
                 console.log(`反射"なし"の経路計算 次のタイル: ${nextTile}`);
                 if (nextTile != dungeon._tile_info.Air.Type){
                     console.log(`破壊石が衝突 Pos:${JSON.stringify(this.position)}`);
@@ -1207,6 +1218,36 @@ class Stone{
                 this.position = {x: next.x, y: next.y};
                 magic_animation_data.push(next.x, next.y);
                 console.log(`破壊石を進める Pos:${JSON.stringify(this.position)}`);
+            }
+            // ぶつかったあとの処理だよ
+            // nextTileにあるオブジェクトに対して処理する
+            switch (nextTile) {
+                case dungeon._tile_info.Air.Type:
+                case dungeon._tile_info.Bedrock.Type:
+                    break;
+                case dungeon._tile_info.Wall.Type: //こわす
+                    // 壁を破壊
+                    break;
+                case dungeon._tile_info.R.Type:
+                case dungeon._tile_info.L.Type:
+                    // 石を破壊
+                    break;
+                case dungeon._tile_info.B.Type:
+                    // 本来マップに存在しない
+                    // とりあえず破壊
+                    break;
+                case dungeon._tile_info.Enemy.Type:
+                    // 敵にダメージ
+                    break;
+                case dungeon._tile_info.Treasure.Type:
+                    // とりあえず消す
+                    break;
+                case dungeon._tile_info.Player.Type:
+                    // 自分にダメージ？
+                    break;
+                default:
+                    console.log(`破壊処理 不正なタイルタイプ ${nextTile}`);
+                    break;
             }
         }
 
@@ -1308,6 +1349,7 @@ function draw(){
 
 }
 
+let stone_distance = 5;
 function keyPressed() {
     if (key == 'w') { //up
         my_player.move(0, -1);
@@ -1323,25 +1365,29 @@ function keyPressed() {
     let animation_data = null;
     if (key == 'r'){
         // 右石
-        let stone = new Stone("R", 0, 1, 5);
+        let stone = new Stone("R", 0, 1, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
-        console.log('migi uchi!');
+        console.log('Migi uchi!');
     }else if(key == 'l'){
         // 左石
-        let stone = new Stone("L", 0, 1, 5);
+        let stone = new Stone("L", 0, 1, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('Left uchi!');
     }else if(key == 'b'){
         // 攻撃石
-        let stone = new Stone("B", 0, 1, 5);
+        let stone = new Stone("B", 0, 1, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('Break uchi!');
+    }else if(!isNaN(key) && key != ' '){
+        // 数値 石の飛距離変更
+        stone_distance = Number(key);
+        console.log(`Changed distance=${stone_distance}`);
     }
 
     display_all();
