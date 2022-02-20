@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/10/16
+///---- 2021/10/30
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -883,6 +883,138 @@ class Enemy_List {
     }
 }
 
+class MDObject{
+
+    constructor(my_dungeon) {
+        this._dungeon = my_dungeon;
+        
+        this._position_x = 0;
+        this._position_y = 0;
+
+        this._is_visible = true;
+    }
+
+    make() {
+        console.log("MDObject.make");
+
+        // ランダム位置に配置(岩盤以外)
+        let index = this._dungeon.get_random_mdobject_index();
+
+        this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
+        this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
+    }
+
+    is_exist(x, y) {
+        let is_exist = (this._position_x == x && this._position_y == y);
+        return is_exist;
+    }
+    
+    display() {
+        console.log("MDObjectController.display");
+
+        if(this._is_visible){
+            this._dungeon.display(this._position_x, this._position_y);
+        }
+    }
+}
+
+class MDObjectList{
+
+    constructor(my_dungeon, count, md_object) {
+        this._dungeon = my_dungeon;
+        this._count = count;
+        this._object_list = [];
+
+        this._make(md_object);
+    }
+
+    // Enemyとかをコピーできるはず
+    _make(md_object) {
+        for (let i = 0; i < this._count; i++) {
+            new_md_object = Object.assign({}, md_object);
+            new_md_object.make();
+            this._object_list.push(new_md_object);
+        }
+    }
+
+    get(){
+        return this._object_list;
+    }
+
+    get_md_object(x, y) {
+        for (let i = 0; i < this._count; i++) {
+            if (this._object_list[i].is_exist(x, y)) {
+                return this._object_list[i];
+            }
+        }
+
+        return null;
+    }
+
+    is_exist( x, y) {
+        let md_object = this.get_md_object(x, y);
+        if (md_object == null)
+            return false;
+        
+        return true;
+    }
+    
+    display() {
+        for (let i = 0; i < this._count; i++) {
+            this._object_list[i].display();
+        }
+    }
+}
+
+// 10/30 コントローラはモデルにまとめました
+//class MDObjectController{
+
+    // constructor() {
+    // }
+
+    // is_exist(md_object, x, y) {
+    //     let is_exist = (md_object._position_x == x && md_object._position_y == y);
+    //     return is_exist;
+    // }
+    
+    // display(md_object) {
+    //     console.log("MDObjectController.display");
+
+    //     if(md_object._is_visible){
+    //         md_object._dungeon.display(md_object._position_x, md_object._position_y);
+    //     }
+    // }
+//}
+
+// class MDObjectListController{
+    
+//     constructor() {
+//     }
+
+//     get_md_object(md_object_list, x, y) {
+//         for (let i = 0; i < md_object_list._count; i++) {
+//             if (md_object_list._object_list[i].is_exist(x, y)) {
+//                 return this._object_list[i];
+//             }
+//         }
+
+//         return null;
+//     }
+
+//     is_exist(md_object_list, x, y) {
+//         let md_object = this.get_md_object(md_object_list, x, y);
+//         if (md_object == null)
+//             return false;
+        
+//         return true;
+//     }
+    
+//     display(md_object_list) {
+//         for (let i = 0; i < md_object_list._count; i++) {
+//             md_object_list[i].display();
+//         }
+//     }
+// }
 
 //------- ------ main 
 
