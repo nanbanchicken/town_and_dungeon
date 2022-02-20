@@ -3,7 +3,8 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/1/22
+///---- 2022/1/29
+
 class MDMath {
     // 固定の方向に曲げてやる
     //let RotateRight = [[0, -1], [1, 0]]
@@ -1022,6 +1023,68 @@ class EnemyList extends MDObjectList {
 //     }
 // }
 
+class MagicAnimation{
+    // 魔法のアニメーションを描画する
+    constructor(dungeon, animation_data_list){
+        this.dungeon = dungeon;
+        this.animation_data_list = animation_data_list;
+        // animation_data = [
+        //     {property: "R", route: [{x: 1, y: 2}, {x: 1, y: 3}], speed: 100},
+        //     {property: "L", route: [{x: 1, y: 2}, {x: 1, y: 3}, , {x: 1, y: 5}], speed: 100},
+        // ]
+        this.draw_magic();
+    }
+
+    async draw_magic(){
+        console.log(`draw_magic -> ${JSON.stringify(this.animation_data_list)}`);
+        // 魔法を石のリストにした時に使う
+        // for (let i = 0; i < this.animation_data_list.length; i++) {
+        //     console.log('draw_magic:loop');
+        //     const stone = this.animation_data_list[i];
+        //     await this.draw_stone();
+        //     this.erase_trajectory();
+        // }
+        // 今は石一つしかないのでforしない
+        const stone = this.animation_data_list;
+        await this.draw_stone(stone);
+    }
+
+    async draw_stone(stone){
+        console.log('draw_stone:');
+        for (let i = 0; i < stone.route.length; i++) {
+            const postion = stone.route[i]; // {x: 1, y: 2}
+            this.dungeon.display_stone(postion.x, postion.y, stone);
+            console.log('draw_stone loop');
+            await this.sleep(stone.speed);
+        }
+        // アニメフレーム待機
+    }
+
+    // https://editor.p5js.org/RemyDekor/sketches/9jcxFGdHS
+    sleep(millisecondsDuration)
+    {
+        return new Promise((resolve) => {
+            setTimeout(resolve, millisecondsDuration);
+        })
+    }
+
+    erase_trajectory(){
+
+    }
+}
+
+class MagicAnimationData{
+    constructor(property, speed){
+        this.property = property; // R, L...
+        this.route = []; // [{x: 1, y: 2}, {x: 1, y: 3}] // 石の位置(経路)
+        this.speed = speed; // 5 描画時間(ms) 
+    }
+
+    push(postion_x, position_y){
+        this.route.push({x: postion_x, y: position_y});
+    }
+}
+
 class Stone{
     constructor(property, cost, damage, maxDistance){
         this.property = property; // R, L, B
@@ -1037,8 +1100,11 @@ class Stone{
     // 2021/12/18 うごいた！
     // leftDistance にバグあり。１つ遠くまで飛ぶよ。
     // 2022/1/22 なおったよ！(置くのをあとにしたよ)
-    execute(dungeon, position, direction){
-        console.log('Stone.execute : ')
+    // （元execute) 魔法石の飛ぶルート/magic_animatiion_dataを返す
+    calc_route(dungeon, position, direction){
+        let magic_animation_data = new MagicAnimationData(this.property, 100);
+
+        console.log('Stone.calc_route : ')
         this.position = position;
         this.direction = direction;
         let watchDogCount = 0; // 進んだ距離 反射がループしているか監視
@@ -1049,18 +1115,11 @@ class Stone{
                 y: this.position.y + this.direction.y
             };
     
-            // console.log(`残り距離: ${this.leftDistance}`);
-            // python f"{hoge}"
-            // python f"{1} {2} {1}".format(hoge, fuga)
-            // C# $"{hoge}"
-            // C "%S %S",hoge, huga
-            // rust "{} {}",hoge, huga
-            // Fortran 11 hoge
-    
             let nextTile = dungeon.map.get_value(next.x, next.y);
             if(nextTile == dungeon._tile_info.Air.Type){
                 this.leftDistance -= 1;
                 this.position = {x: next.x, y: next.y};
+                magic_animation_data.push(next.x, next.y);
                 watchDogCount = 0;
                 console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
             }else {
@@ -1094,7 +1153,7 @@ class Stone{
                         // 貫通させたい
                         break;
                     default:
-                        console.log('Stone::execute 次タイルの判定に失敗しました。');
+                        console.log('Stone::calc_route 次タイルの判定に失敗しました。');
                         break;
                 }
     
@@ -1103,8 +1162,8 @@ class Stone{
             if(this.leftDistance == 0){
                 // 石を配置
                 dungeon.add_stone(next.x, next.y, this);
-                dungeon.display_stone(next.x, next.y, this);
-                return;
+                // dungeon.display_stone(next.x, next.y, this);
+                return magic_animation_data;
             }
         }
     }
@@ -1216,21 +1275,26 @@ function keyPressed() {
     }
 
     // 魔法のテスト
+    let animation_data = null;
     if (key == 'r'){
         let stone = new Stone("R", 0, 1, 5);
-        stone.execute(my_dungeon, 
+        animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
-        console.log('migi uchi!')
+        console.log('migi uchi!');
     }else if(key == 'l'){
         let stone = new Stone("L", 0, 1, 5);
-        stone.execute(my_dungeon, 
+        animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
-        console.log('Left uchi!')
+        console.log('Left uchi!');
     }
 
     display_all();
+    if(animation_data != null){
+        let magic_animation = new MagicAnimation(my_dungeon, animation_data);
+        magic_animation.draw_magic();
+    }
 
     console.log("--------------------" + key);
 }
