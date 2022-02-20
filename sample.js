@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/1/29
+///---- 2022/2/5
 
 class MDMath {
     // 固定の方向に曲げてやる
@@ -384,6 +384,10 @@ class Dungeon {
     // プレイヤーを表示
     display_player(x, y) {
         this._draw_tile(x, y, this._tile_info.Player.Type);
+    }
+
+    display_air(x, y) {
+        this._draw_tile(x, y, this._tile_info.Air.Type);
     }
 
     display_stone(x, y, stone) {
@@ -1049,15 +1053,27 @@ class MagicAnimation{
         await this.draw_stone(stone);
     }
 
-    async draw_stone(stone){
+    async draw_stone(stone){ // stone.route = [p1, p2, ... pn]
         console.log('draw_stone:');
+        let prev_position = null;
         for (let i = 0; i < stone.route.length; i++) {
-            const postion = stone.route[i]; // {x: 1, y: 2}
-            this.dungeon.display_stone(postion.x, postion.y, stone);
+            if(prev_position != null){
+                // 前回配置した石のアニメを消す
+                this.dungeon.display_air(prev_position.x, prev_position.y);    
+            }
+
+            const position = stone.route[i]; // {x: 1, y: 2}
+            prev_position = position;
+            this.dungeon.display_stone(position.x, position.y, stone);
             console.log('draw_stone loop');
+            // アニメフレーム待機
             await this.sleep(stone.speed);
         }
-        // アニメフレーム待機
+        
+        // ダンジョンに石を配置
+        if(stone.route.length == 0){ return; } 
+        let last_position = stone.route[stone.route.length - 1];
+        this.dungeon.add_stone(last_position.x, last_position.y, stone);
     }
 
     // https://editor.p5js.org/RemyDekor/sketches/9jcxFGdHS
@@ -1102,7 +1118,7 @@ class Stone{
     // 2022/1/22 なおったよ！(置くのをあとにしたよ)
     // （元execute) 魔法石の飛ぶルート/magic_animatiion_dataを返す
     calc_route(dungeon, position, direction){
-        let magic_animation_data = new MagicAnimationData(this.property, 100);
+        let magic_animation_data = new MagicAnimationData(this.property, 300);
 
         console.log('Stone.calc_route : ')
         this.position = position;
@@ -1127,7 +1143,7 @@ class Stone{
                     case dungeon._tile_info.Bedrock.Type:
                     case dungeon._tile_info.Wall.Type:
                     case dungeon._tile_info.R.Type:
-                        // 固定の方向右に曲げてやる
+                        // 固定の方向= 右に曲げてやる
                         let newDirection = my_mdMath.rotateRight(this.direction);
                         this.direction = newDirection;
                         watchDogCount+=1;
@@ -1161,7 +1177,7 @@ class Stone{
 
             if(this.leftDistance == 0){
                 // 石を配置
-                dungeon.add_stone(next.x, next.y, this);
+                // dungeon.add_stone(next.x, next.y, this); -> MagicAnimation へ移動
                 // dungeon.display_stone(next.x, next.y, this);
                 return magic_animation_data;
             }
