@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/2/5
+///---- 2022/2/12
 
 class MDMath {
     // 固定の方向に曲げてやる
@@ -376,9 +376,17 @@ class Dungeon {
         
         for (let y = 0; y < this._height; y++){
             for(let x=0; x < this._width; x++){
-                this._draw_tile(x, y, this.map.get_value(x, y));
+                this._draw_tile(x, y, this.get_value(x, y));
             }
         }
+    }
+
+    get_value(x, y){
+        // TODO
+        // dungeon.map, enemy_list, treasure_list, magic_stone_listを参照して値を返す
+        // これはenemy, treasureを見てない
+        // magic_stone_listはまだない(マップに値を直接挿入している)
+        return this.map.get_value(x, y);
     }
 
     // プレイヤーを表示
@@ -1072,6 +1080,7 @@ class MagicAnimation{
         
         // ダンジョンに石を配置
         if(stone.route.length == 0){ return; } 
+        // if(ston.property == 'B'){ return; }  // 将来有効化 デバッグ用に破壊石もマップに配置する
         let last_position = stone.route[stone.route.length - 1];
         this.dungeon.add_stone(last_position.x, last_position.y, stone);
     }
@@ -1132,56 +1141,76 @@ class Stone{
             };
     
             let nextTile = dungeon.map.get_value(next.x, next.y);
-            if(nextTile == dungeon._tile_info.Air.Type){
-                this.leftDistance -= 1;
-                this.position = {x: next.x, y: next.y};
-                magic_animation_data.push(next.x, next.y);
-                watchDogCount = 0;
-                console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
-            }else {
-                switch (nextTile) {
-                    case dungeon._tile_info.Bedrock.Type:
-                    case dungeon._tile_info.Wall.Type:
-                    case dungeon._tile_info.R.Type:
-                        // 固定の方向= 右に曲げてやる
-                        let newDirection = my_mdMath.rotateRight(this.direction);
-                        this.direction = newDirection;
-                        watchDogCount+=1;
-                        if(this.IsRefrectLoop(watchDogCount)){
-                            console.log("石の反射が無限ループ");
-                            return;
-                        }
-                        break;
-                    case dungeon._tile_info.L.Type:
-                        // 左に曲げる
-                        this.direction = my_mdMath.rotateLeft(this.direction);
-                        watchDogCount+=1;
-                        if(this.IsRefrectLoop(watchDogCount)){
-                            console.log("石の反射が無限ループ");
-                            return;
-                        }
-                        break;
-                    case dungeon._tile_info.Enemy.Type:
-                    case dungeon._tile_info.Player.Type:
-                        // ブレイクさせる
-                        break;
-                    case dungeon._tile_info.Treasure.Type:
-                        // 貫通させたい
-                        break;
-                    default:
-                        console.log('Stone::calc_route 次タイルの判定に失敗しました。');
-                        break;
-                }
-    
+            console.log(`反射ありの経路計算 次のタイル: ${nextTile}`);
+            switch (nextTile) {
+                case dungeon._tile_info.Air.Type:
+                    this.leftDistance -= 1;
+                    this.position = {x: next.x, y: next.y};
+                    magic_animation_data.push(next.x, next.y);
+                    watchDogCount = 0;
+                    console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
+                    break;
+                case dungeon._tile_info.Bedrock.Type:
+                case dungeon._tile_info.Wall.Type:
+                case dungeon._tile_info.R.Type:
+                case dungeon._tile_info.B.Type:
+                    // 将来的に破壊石はマップに配置されない
+                    // 固定の方向= 右に曲げてやる
+                    let newDirection = my_mdMath.rotateRight(this.direction);
+                    this.direction = newDirection;
+                    watchDogCount+=1;
+                    if(this.IsRefrectLoop(watchDogCount)){
+                        console.log("石の反射が無限ループ");
+                        return;
+                    }
+                    break;
+                case dungeon._tile_info.L.Type:
+                    // 左に曲げる
+                    this.direction = my_mdMath.rotateLeft(this.direction);
+                    watchDogCount+=1;
+                    if(this.IsRefrectLoop(watchDogCount)){
+                        console.log("石の反射が無限ループ");
+                        return;
+                    }
+                    break;
+                case dungeon._tile_info.Enemy.Type:
+                case dungeon._tile_info.Player.Type:
+                    // ブレイクさせる
+                    break;
+                case dungeon._tile_info.Treasure.Type:
+                    // 貫通させたい
+                    break;
+                default:
+                    console.log('Stone::calc_route 次タイルの判定に失敗しました。');
+                    break;
             }
 
-            if(this.leftDistance == 0){
-                // 石を配置
-                // dungeon.add_stone(next.x, next.y, this); -> MagicAnimation へ移動
-                // dungeon.display_stone(next.x, next.y, this);
-                return magic_animation_data;
+            
+        }
+
+        if(this.property == 'B')
+        {
+            while(true){
+                // 破壊石 直線で何かに当たるまで経路計算
+                let next = {
+                    x: this.position.x + this.direction.x,
+                    y: this.position.y + this.direction.y
+                };
+
+                let nextTile = dungeon.map.get_value(next.x, next.y);
+                console.log(`反射"なし"の経路計算 次のタイル: ${nextTile}`);
+                if (nextTile != dungeon._tile_info.Air.Type){
+                    console.log(`破壊石が衝突 Pos:${JSON.stringify(this.position)}`);
+                    break;
+                }
+
+                this.position = {x: next.x, y: next.y};
+                magic_animation_data.push(next.x, next.y);
+                console.log(`破壊石を進める Pos:${JSON.stringify(this.position)}`);
             }
         }
+
+        return magic_animation_data;
     }
 
     // 反射がループしているか
@@ -1293,17 +1322,26 @@ function keyPressed() {
     // 魔法のテスト
     let animation_data = null;
     if (key == 'r'){
+        // 右石
         let stone = new Stone("R", 0, 1, 5);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('migi uchi!');
     }else if(key == 'l'){
+        // 左石
         let stone = new Stone("L", 0, 1, 5);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('Left uchi!');
+    }else if(key == 'b'){
+        // 攻撃石
+        let stone = new Stone("B", 0, 1, 5);
+        animation_data = stone.calc_route(my_dungeon, 
+            {x: my_player._position_x, y: my_player._position_y},
+            {x: 1, y: 0});
+        console.log('Break uchi!');
     }
 
     display_all();
