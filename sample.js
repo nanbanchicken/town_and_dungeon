@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Nishino Junji
 
-///---- 2021/8/28
+///---- 2021/9/11
 class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
@@ -13,10 +13,66 @@ class Room_Config {
     }
 }
 
+class SightPattern{
+    // width, height, size
+    constructor(w, h, s){
+        this._width = w;
+        this._height = h;
+        this._size = s;
+        this._temp_size = null;
+        this._preset_patterns = {'四角': [], '三角': []}; // デフォルトのパターン
+        
+        this.create_preset_pattern();
+    }
+
+    create_preset_pattern(){
+        let sight_size = this._temp_size;
+        if (sight_size == null){
+            sight_size = this._size;
+        }
+
+        // 四角
+        // [1, 1, 1,
+        //  1, 1, 1,
+        //  1, 1, 1]
+        this._preset_patterns['四角'] = new MDMap(sight_size, sight_size, 1);
+        
+        // 十字
+        // [0, 1, 0,
+        //  1, 1, 1,
+        //  0, 1, 0]
+        this._preset_patterns['十字'] = new MDMap(sight_size, sight_size, 0);
+        if(sight_size % 2 == 0){
+            // 偶数
+        }
+        else{ //     0 [1] 2
+              //   0 1 [2] 3 4
+              // 0 1 2 [3] 4 5 6
+            // 奇数
+            let mid_index = (sight_size + 1) / 2 - 1;
+            for(let x = 0; x < sight_size; x++){
+                for(let y = 0; y < sight_size; y++){
+                    if(Math.abs(x - mid_index) + Math.abs(y - mid_index) <= mid_index){
+                        this._preset_patterns['十字'].update(x, y, 1);
+                    }
+                }
+            }
+        }
+
+        console.log(this._preset_patterns['四角']);
+        console.log(this._preset_patterns['十字']);
+
+        // 三角
+        // [1, 1, 1,
+        //  0, 1, 0]
+    }
+
+}
+
 class MDMap { // [M]achi to [D]ungen no [Map]
-    constructor(width, height, default_fill) {
-        this._width = width;
-        this._height = height;
+    constructor(w, h, default_fill){
+        this._width = w;
+        this._height = h;
         this._default_fill = default_fill;
 
         // this._tile_info = {
@@ -67,16 +123,16 @@ class MDMap { // [M]achi to [D]ungen no [Map]
 
 class Dungeon_Mask {
 
-    constructor(width, height) {
-        this._width = width;
-        this._height = height;
+    constructor(w, h) {
+        this._width = w;
+        this._height = h;
 
         this._tile_info = {
             Black: { Type: 0, Color: 'rgb(0,0,0)' },
             Gray: { Type: 1, Color: 'rgb(150,150,150)' }
         };
 
-        this.mask = new MDMap(width, height, false);
+        this.mask = new MDMap(w, h, false);
     }
     
     display(dungeon, player_x, player_y) {
@@ -137,9 +193,9 @@ class Dungeon_Mask {
 
 class Dungeon { 
 
-    constructor(width, height, room_count, room_config, treasure_count) {
-        this._width = width;
-        this._height = height;
+    constructor(w, h, room_count, room_config, treasure_count) {
+        this._width = w;
+        this._height = h;
         this._room_count = room_count;
         this._room_config = room_config;
         
@@ -237,10 +293,10 @@ class Dungeon {
         console.log("_make_room");
 
         for (let count = 0; count < room_count; count++) {
-            let width = this._get_random_range(this._room_config.min_width, this._room_config.max_width + 1);
-            let height = this._get_random_range(this._room_config.min_height, this._room_config.max_height + 1);
+            let w = this._get_random_range(this._room_config.min_width, this._room_config.max_width + 1);
+            let h = this._get_random_range(this._room_config.min_height, this._room_config.max_height + 1);
             
-            this._make_one_room(width, height);
+            this._make_one_room(w, h);
         }
     }
     
@@ -553,6 +609,7 @@ class Treasure_List {
 let canvasSize = 600;
 let my_dungeon;
 let my_player;
+let my_sight_pattern;
 
 function setup(){
     canvasSize=windowHeight;
@@ -565,6 +622,8 @@ function setup(){
     my_dungeon = new Dungeon(16, 16, 5, room_config, 10);
 
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
+    
+    my_sight_pattern = new SightPattern(16, 16, 5);
     
     display_all();
 }
