@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/2/19
+///---- 2022/2/26
 
 class MDMath {
     // 固定の方向に曲げてやる
@@ -719,6 +719,7 @@ class Player {
 
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
+        this._hp = 10;
         this._position_x = 0;
         this._position_y = 0;
 
@@ -786,6 +787,17 @@ class Player {
                 }
             }
         }
+    }
+
+    is_alive(){
+        return hp > 0;
+    }
+
+    // ダメージを与える場合は -1 (<0)
+    // 回復させる場合は +value (>0)
+    update_hp(damage){
+        this._hp += damage;
+        return this;
     }
 }
 
@@ -931,12 +943,14 @@ class Enemy extends MDObject {
         console.log("enemy.attack 未実装");
     }
 
-    attacked() {
+    attacked(damage) {
         console.log("enemy.attacked");
 
-        this._hp = 0;
-        this._position_x = -1;
-        this._position_y = -1;
+        this._hp += damage;
+        if (!this.is_alive()){
+            this._position_x = -1;
+            this._position_y = -1;
+        }
     }
 
     is_alive(){
@@ -985,13 +999,13 @@ class EnemyList extends MDObjectList {
     }
 
     // enemyがtarget?攻撃される
-    attacked_enemy(x, y) {
+    attacked_enemy(x, y, damage) {
         let enemy = this.get_enemy(x, y);
         if (enemy == null) {
             return false;
         }
 
-        enemy.attacked();
+        enemy.attacked(damage);
         return enemy;
     }
 }
@@ -1120,6 +1134,11 @@ class MagicAnimationData{
     push(postion_x, position_y){
         this.route.push({x: postion_x, y: position_y});
     }
+
+    last(){
+        if (this.route.length == 0){return null;}
+        return this.route[this.route.length - 1];
+    }
 }
 
 class Stone{
@@ -1198,6 +1217,7 @@ class Stone{
             
         }
 
+        // if(this.property == dungeon._tile_info.B.Type)
         if(this.property == 'B')
         {
             let nextTile = null;
@@ -1210,44 +1230,17 @@ class Stone{
 
                 nextTile = dungeon.get_value(next.x, next.y);
                 console.log(`反射"なし"の経路計算 次のタイル: ${nextTile}`);
-                if (nextTile != dungeon._tile_info.Air.Type){
+                
+                this.position = {x: next.x, y: next.y};
+                magic_animation_data.push(next.x, next.y);
+                
+                // Air, Treasure はスルー、それ以外衝突
+                // magic_animation_data の最後は、当たった相手の座標
+                if (![dungeon._tile_info.Air.Type, dungeon._tile_info.Treasure.Type].includes(nextTile)){
                     console.log(`破壊石が衝突 Pos:${JSON.stringify(this.position)}`);
                     break;
                 }
-
-                this.position = {x: next.x, y: next.y};
-                magic_animation_data.push(next.x, next.y);
                 console.log(`破壊石を進める Pos:${JSON.stringify(this.position)}`);
-            }
-            // ぶつかったあとの処理だよ
-            // nextTileにあるオブジェクトに対して処理する
-            switch (nextTile) {
-                case dungeon._tile_info.Air.Type:
-                case dungeon._tile_info.Bedrock.Type:
-                    break;
-                case dungeon._tile_info.Wall.Type: //こわす
-                    // 壁を破壊
-                    break;
-                case dungeon._tile_info.R.Type:
-                case dungeon._tile_info.L.Type:
-                    // 石を破壊
-                    break;
-                case dungeon._tile_info.B.Type:
-                    // 本来マップに存在しない
-                    // とりあえず破壊
-                    break;
-                case dungeon._tile_info.Enemy.Type:
-                    // 敵にダメージ
-                    break;
-                case dungeon._tile_info.Treasure.Type:
-                    // とりあえず消す
-                    break;
-                case dungeon._tile_info.Player.Type:
-                    // 自分にダメージ？
-                    break;
-                default:
-                    console.log(`破壊処理 不正なタイルタイプ ${nextTile}`);
-                    break;
             }
         }
 
@@ -1262,7 +1255,9 @@ class Stone{
 }
 
 class Magic{
-    constructor(maxLength){
+    constructor(player, dungeon, maxLength){
+        this._player = player;
+        this._dungeon = dungeon;
         this.stones = [];
         this.maxLength = 5; // 石を入れられる数
     }
@@ -1306,6 +1301,52 @@ class Magic{
             // 石の配置
 
             // ダメージ計算
+        }
+    }
+
+    // 対象物のHPを増減
+    // magic_animation_data(石の移動経路全体)は将来的に引数から外すかもしれない
+    doBreak(stone, magic_animation_data){
+        if(magic_animation_data == null){return;}
+        let target = magic_animation_data.last();
+        let targetTile = this._dungeon.get_value(target.x, target.y);
+
+        // 別の関数の話
+        // ブレイク石の場合はマップに配置しない(現在配置しているので、石の種類を見て調整する必要がある)
+
+        switch (targetTile) {
+            case this._dungeon._tile_info.Wall.Type:
+                this._dungeon.dig_wall(target.x, target.y);
+                // 壁を破壊
+                break;
+            case this._dungeon._tile_info.R.Type:
+            case this._dungeon._tile_info.L.Type:
+                // 将来的に石はダンジョンに直配置しない(宝箱などと同じ)場合は削除対象を変更する必要がある
+                this._dungeon.dig_wall(target.x, target.y);
+                // 石を破壊
+                break;
+            case this._dungeon._tile_info.B.Type:
+                // 本来マップに存在しない
+                // とりあえず破壊
+                break;
+            case this._dungeon._tile_info.Enemy.Type:
+                // 敵にダメージ
+                let enemy = this._dungeon._enemyList.attacked_enemy(target.x, target.y, stone.damage);
+                if(!enemy.is_alive()){
+                    this._player._stats.add_kill_enemy();
+                }
+                break;
+            case this._dungeon._tile_info.Player.Type:
+                // 自分にダメージ？
+                break;
+            case this._dungeon._tile_info.Air.Type:
+            case this._dungeon._tile_info.Treasure.Type:
+            case this._dungeon._tile_info.Bedrock.Type:
+                // 何もしない
+                break;
+            default:
+                console.log(`破壊処理 不正なタイルタイプ ${targetTile}`);
+                break;
         }
     }
 }
@@ -1361,25 +1402,27 @@ function keyPressed() {
         my_player.move(1, 0);
     }
 
-    // 魔法のテスト
+    // 魔法のテストったらテスト
     let animation_data = null;
+    let stone = null;
+    let stone_damage = -3;
     if (key == 'r'){
         // 右石
-        let stone = new Stone("R", 0, 1, stone_distance);
+        stone = new Stone("R", 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('Migi uchi!');
     }else if(key == 'l'){
         // 左石
-        let stone = new Stone("L", 0, 1, stone_distance);
+        stone = new Stone("L", 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('Left uchi!');
     }else if(key == 'b'){
         // 攻撃石
-        let stone = new Stone("B", 0, 1, stone_distance);
+        stone = new Stone("B", 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
@@ -1391,9 +1434,15 @@ function keyPressed() {
     }
 
     display_all();
+    
     if(animation_data != null){
         let magic_animation = new MagicAnimation(my_dungeon, animation_data);
         magic_animation.draw_magic();
+        // 破壊するのは将来的には、Magic.execute()で。
+        if(stone.property == 'B'){
+            magic = new Magic(my_player, my_dungeon, 5);
+            magic.doBreak(stone, animation_data);
+        }
     }
 
     console.log("--------------------" + key);
