@@ -153,7 +153,7 @@ class MDMap { // [M]achi to [D]ungen no [Map]
         this._height = h;
         this._default_fill = default_fill;
 
-        // this._tile_info = {
+        // world.tile_info = {
         //     Black: { Type: 0, Color: 'rgb(0,0,0)' },
         //     Gray: { Type: 1, Color: 'rgb(150,150,150)' }
         // };
@@ -236,9 +236,9 @@ class Dungeon_Mask {
                 else if(mask_value == this._sight_info.Gray.Type){
                     // 一度見たことのある場所
                     let dungeon_value = dungeon.map.get_value(x, y);
-                    if (dungeon_value == dungeon._tile_info.Treasure.Type) {//???? != treasure?
+                    if (dungeon_value == world.tile_info.Treasure.Type) {//???? != treasure?
                         this._draw_tile(x, y, this._sight_info.Gray.Type);
-                    }else if(dungeon_value == dungeon._tile_info.Air.Type) {
+                    }else if(dungeon_value == world.tile_info.Air.Type) {
                         this._draw_tile(x, y, this._sight_info.Gray.Type);
                     }
                 }
@@ -311,6 +311,28 @@ class Dungeon_Mask {
     }
 }
 
+class World {
+
+    tile_info = {
+        Bedrock: {Type: -1, Color: 'rgb(0,0,0)'}, // 岩盤
+        Air: { Type: 0, Color: 'rgb(255,255,255)' }, // 空間
+        Wall: { Type: 1, Color: 'rgb(100,100,100)' }, // 壁
+        Player: { Type: 2, Color: 'rgb(255,0,0)' }, // プレイヤー
+        Treasure: { Type: 3, Color: 'rgb(0,255,0)'}, // 宝箱
+        Enemy: { Type: 4, Color: 'rgb(192,149,103)'}, // 敵
+        // 魔法の石
+        R: { Type: 100, Color: 'rgb(255,125,125)'}, // 右魔法石 薄い赤
+        L: { Type: 101, Color: 'rgb(125,125,255)'}, // 左魔法石 薄い青
+        B: { Type: 102, Color: 'rgb(125,0,125)'},   // 破壊石　紫
+        C: { Type: 103, Color: 'rgb(255,255,0)'},   // 回復石 黄
+    };
+
+}
+// world.tile_info
+// world.tile_info['B'].Type
+// world.tile_info.B.Type
+let world = new World();
+
 class Dungeon { 
 
     constructor(w, h, room_count, room_config, treasure_count, enemy_count) {
@@ -318,20 +340,6 @@ class Dungeon {
         this._height = h;
         this._room_count = room_count;
         this._room_config = room_config;
-        
-        this._tile_info = {
-            Bedrock: {Type: -1, Color: 'rgb(0,0,0)'}, // 岩盤
-            Air: { Type: 0, Color: 'rgb(255,255,255)' }, // 空間
-            Wall: { Type: 1, Color: 'rgb(100,100,100)' }, // 壁
-            Player: { Type: 2, Color: 'rgb(255,0,0)' }, // プレイヤー
-            Treasure: { Type: 3, Color: 'rgb(0,255,0)'}, // 宝箱
-            Enemy: { Type: 4, Color: 'rgb(192,149,103)'}, // 敵
-            // 魔法の石
-            R: { Type: 100, Color: 'rgb(255,125,125)'}, // 右魔法石 薄い赤
-            L: { Type: 101, Color: 'rgb(125,125,255)'}, // 左魔法石 薄い青
-            B: { Type: 102, Color: 'rgb(125,0,125)'},   // 破壊石　紫
-            C: { Type: 103, Color: 'rgb(255,255,0)'},   // 回復石 黄
-        };
 
         this.map = null;
         this._treasure_white_list = [];
@@ -351,8 +359,8 @@ class Dungeon {
 
     _init() { 
         // 最初は全部壁で埋める
-        // this.map = new MDMap(this._width, this._height, this._tile_info.Wall.Type);
-        this.map = new MDMap(this._width, this._height, this._tile_info.Air.Type);
+        // this.map = new MDMap(this._width, this._height, world.tile_info.Wall.Type);
+        this.map = new MDMap(this._width, this._height, world.tile_info.Air.Type);
 
         // 岩盤で周囲を囲む
         for (let y = 0; y < this._height; y++) {
@@ -390,10 +398,10 @@ class Dungeon {
         // 済 これはenemy, treasureを見てない
         // 済 magic_stone_listはまだない(マップに値を直接挿入している)
         if(this._treasureList.is_exist_treasure(x, y)){
-            return this._tile_info.Treasure.Type;
+            return world.tile_info.Treasure.Type;
         }
         else if(this._enemyList.is_exist_enemy(x, y)){
-            return this._tile_info.Enemy.Type;
+            return world.tile_info.Enemy.Type;
         }
 
         return this.map.get_value(x, y);
@@ -401,15 +409,15 @@ class Dungeon {
 
     // プレイヤーを表示
     display_player(x, y) {
-        this._draw_tile(x, y, this._tile_info.Player.Type);
+        this._draw_tile(x, y, world.tile_info.Player.Type);
     }
 
     display_air(x, y) {
-        this._draw_tile(x, y, this._tile_info.Air.Type);
+        this._draw_tile(x, y, world.tile_info.Air.Type);
     }
 
     display_stone(x, y, stone) {
-        this._draw_tile(x, y, this._tile_info[stone.property].Type);
+        this._draw_tile(x, y, world.tile_info[stone.property].Type);
     }
 
     display_treasures() {
@@ -421,27 +429,27 @@ class Dungeon {
     }
     
     display_treasure(x, y) {
-        this._draw_tile(x, y, this._tile_info.Treasure.Type);
+        this._draw_tile(x, y, world.tile_info.Treasure.Type);
     }
 
     display_enemy(x, y) {
-        this._draw_tile(x, y, this._tile_info.Enemy.Type);
+        this._draw_tile(x, y, world.tile_info.Enemy.Type);
     }
 
     // 魔法石を置く
     add_stone(x, y, stone){
         this._stoneList.push({x: x, y: y, stone: stone});
-        this.map.update(x, y, this._tile_info[stone.property].Type);
+        this.map.update(x, y, world.tile_info[stone.property].Type);
     }
 
     // 
 
     _get_tile_color(tile_type) {
-        for (let item in this._tile_info) {
-            if (this._tile_info[item].Type == tile_type)
-                return this._tile_info[item].Color;
+        for (let item in world.tile_info) {
+            if (world.tile_info[item].Type == tile_type)
+                return world.tile_info[item].Color;
         }
-        return this._tile_info.Bedrock.Color; // error
+        return world.tile_info.Bedrock.Color; // error
    
     }
 
@@ -449,7 +457,7 @@ class Dungeon {
         let color = this._get_tile_color(tile_type);
         fill(color);
 
-        if (tile_type == this._tile_info.Player.Type) {
+        if (tile_type == world.tile_info.Player.Type) {
             ellipseMode(CORNER);
             ellipse(x * 20, y * 20, 20, 20);
         }  else {
@@ -549,22 +557,22 @@ class Dungeon {
 
     // mapのx, yの位置を岩盤で埋める
     fill_bedrock(x, y) {
-        this.map.update(x, y, this._tile_info.Bedrock.Type);
+        this.map.update(x, y, world.tile_info.Bedrock.Type);
     }
     
     // mapのx, yの位置に空間を開ける
     dig_wall(x, y){
         let value = this.map.get_value(x, y);
-        if (value == this._tile_info.Bedrock.Type) {
+        if (value == world.tile_info.Bedrock.Type) {
             return;
         }
-        this.map.update(x, y, this._tile_info.Air.Type);
+        this.map.update(x, y, world.tile_info.Air.Type);
     }
 
     // 最初の空間座標を取得する
     get_first_air_index() {
         for (let i = 0; i < this._width * this._height; i++) {
-            if (this.map.get_value_index(i) == this._tile_info.Air.Type) {
+            if (this.map.get_value_index(i) == world.tile_info.Air.Type) {
                 return i;
             }
         }
@@ -602,12 +610,12 @@ class Dungeon {
 
     is_bedrock(x, y) {
         let value = this.map.get_value(x, y);
-        return (value == this._tile_info.Bedrock.Type);
+        return (value == world.tile_info.Bedrock.Type);
     }
     
     is_wall(x, y) {
         let value = this.map.get_value(x, y);
-        return (value == this._tile_info.Wall.Type);
+        return (value == world.tile_info.Wall.Type);
     }
 
     // 宝箱関係
@@ -1174,19 +1182,19 @@ class Stone{
             let nextTile = dungeon.get_value(next.x, next.y);
             console.log(`反射ありの経路計算 次のタイル: ${nextTile}`);
             switch (nextTile) {
-                case dungeon._tile_info.Air.Type:
+                case world.tile_info.Air.Type:
                     this.leftDistance -= 1;
                     this.position = {x: next.x, y: next.y};
                     magic_animation_data.push(next.x, next.y);
                     watchDogCount = 0;
                     console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
                     break;
-                case dungeon._tile_info.Bedrock.Type:
-                case dungeon._tile_info.Wall.Type:
-                case dungeon._tile_info.R.Type:
-                case dungeon._tile_info.B.Type:
-                case dungeon._tile_info.Enemy.Type:
-                case dungeon._tile_info.Treasure.Type:
+                case world.tile_info.Bedrock.Type:
+                case world.tile_info.Wall.Type:
+                case world.tile_info.R.Type:
+                case world.tile_info.B.Type:
+                case world.tile_info.Enemy.Type:
+                case world.tile_info.Treasure.Type:
                     // 将来的に破壊石はマップに配置されない
                     // 固定の方向= 右に曲げてやる
                     let newDirection = my_mdMath.rotateRight(this.direction);
@@ -1197,7 +1205,7 @@ class Stone{
                         return;
                     }
                     break;
-                case dungeon._tile_info.L.Type:
+                case world.tile_info.L.Type:
                     // 左に曲げる
                     this.direction = my_mdMath.rotateLeft(this.direction);
                     watchDogCount+=1;
@@ -1206,7 +1214,7 @@ class Stone{
                         return;
                     }
                     break;
-                case dungeon._tile_info.Player.Type:
+                case world.tile_info.Player.Type:
                     // ブレイクさせる
                     break;
                 default:
@@ -1217,7 +1225,7 @@ class Stone{
             
         }
 
-        // if(this.property == dungeon._tile_info.B.Type)
+        // if(this.property == world.tile_info.B.Type)
         if(this.property == 'B')
         {
             let nextTile = null;
@@ -1236,7 +1244,7 @@ class Stone{
                 
                 // Air, Treasure はスルー、それ以外衝突
                 // magic_animation_data の最後は、当たった相手の座標
-                if (![dungeon._tile_info.Air.Type, dungeon._tile_info.Treasure.Type].includes(nextTile)){
+                if (![world.tile_info.Air.Type, world.tile_info.Treasure.Type].includes(nextTile)){
                     console.log(`破壊石が衝突 Pos:${JSON.stringify(this.position)}`);
                     break;
                 }
@@ -1315,33 +1323,33 @@ class Magic{
         // ブレイク石の場合はマップに配置しない(現在配置しているので、石の種類を見て調整する必要がある)
 
         switch (targetTile) {
-            case this._dungeon._tile_info.Wall.Type:
+            case world.tile_info.Wall.Type:
                 this._dungeon.dig_wall(target.x, target.y);
                 // 壁を破壊
                 break;
-            case this._dungeon._tile_info.R.Type:
-            case this._dungeon._tile_info.L.Type:
+            case world.tile_info.R.Type:
+            case world.tile_info.L.Type:
                 // 将来的に石はダンジョンに直配置しない(宝箱などと同じ)場合は削除対象を変更する必要がある
                 this._dungeon.dig_wall(target.x, target.y);
                 // 石を破壊
                 break;
-            case this._dungeon._tile_info.B.Type:
+            case world.tile_info.B.Type:
                 // 本来マップに存在しない
                 // とりあえず破壊
                 break;
-            case this._dungeon._tile_info.Enemy.Type:
+            case world.tile_info.Enemy.Type:
                 // 敵にダメージ
                 let enemy = this._dungeon._enemyList.attacked_enemy(target.x, target.y, stone.damage);
                 if(!enemy.is_alive()){
                     this._player._stats.add_kill_enemy();
                 }
                 break;
-            case this._dungeon._tile_info.Player.Type:
+            case world.tile_info.Player.Type:
                 // 自分にダメージ？
                 break;
-            case this._dungeon._tile_info.Air.Type:
-            case this._dungeon._tile_info.Treasure.Type:
-            case this._dungeon._tile_info.Bedrock.Type:
+            case world.tile_info.Air.Type:
+            case world.tile_info.Treasure.Type:
+            case world.tile_info.Bedrock.Type:
                 // 何もしない
                 break;
             default:
