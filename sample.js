@@ -416,8 +416,8 @@ class Dungeon {
         this._draw_tile(x, y, world.tile_info.Air.Type);
     }
 
-    display_stone(x, y, stone) {
-        this._draw_tile(x, y, world.tile_info[stone.property].Type);
+    display_stone(x, y, stone_animation) {
+        this._draw_tile(x, y, stone_animation.property);
     }
 
     display_treasures() {
@@ -437,9 +437,10 @@ class Dungeon {
     }
 
     // 魔法石を置く
-    add_stone(x, y, stone){
-        this._stoneList.push({x: x, y: y, stone: stone});
-        this.map.update(x, y, world.tile_info[stone.property].Type);
+    add_stone(x, y, stone_animation){
+        // stoneListは現状他で参照していない
+        this._stoneList.push({x: x, y: y, property: stone_animation.property});
+        this.map.update(x, y, stone_animation.property);
     }
 
     // 
@@ -1075,8 +1076,8 @@ class MagicAnimation{
         this.dungeon = dungeon;
         this.animation_data_list = animation_data_list;
         // animation_data = [
-        //     {property: "R", route: [{x: 1, y: 2}, {x: 1, y: 3}], speed: 100},
-        //     {property: "L", route: [{x: 1, y: 2}, {x: 1, y: 3}, , {x: 1, y: 5}], speed: 100},
+        //     {property: world.tile_info.B.Type, route: [{x: 1, y: 2}, {x: 1, y: 3}], speed: 100},
+        //     {property: world.tile_info.B.Type, route: [{x: 1, y: 2}, {x: 1, y: 3}, , {x: 1, y: 5}], speed: 100},
         // ]
         this.draw_magic();
     }
@@ -1091,32 +1092,32 @@ class MagicAnimation{
         //     this.erase_trajectory();
         // }
         // 今は石一つしかないのでforしない
-        const stone = this.animation_data_list;
-        await this.draw_stone(stone);
+        const stone_animation = this.animation_data_list;
+        await this.draw_stone(stone_animation);
     }
 
-    async draw_stone(stone){ // stone.route = [p1, p2, ... pn]
+    async draw_stone(stone_animation){ // stone_animation.route = [p1, p2, ... pn]
         console.log('draw_stone:');
         let prev_position = null;
-        for (let i = 0; i < stone.route.length; i++) {
+        for (let i = 0; i < stone_animation.route.length; i++) {
             if(prev_position != null){
                 // 前回配置した石のアニメを消す
                 this.dungeon.display_air(prev_position.x, prev_position.y);    
             }
 
-            const position = stone.route[i]; // {x: 1, y: 2}
+            const position = stone_animation.route[i]; // {x: 1, y: 2}
             prev_position = position;
-            this.dungeon.display_stone(position.x, position.y, stone);
+            this.dungeon.display_stone(position.x, position.y, stone_animation);
             console.log('draw_stone loop');
             // アニメフレーム待機
-            await this.sleep(stone.speed);
+            await this.sleep(stone_animation.speed);
         }
         
         // ダンジョンに石を配置
-        if(stone.route.length == 0){ return; } 
+        if(stone_animation.route.length == 0){ return; } 
         // if(ston.property == 'B'){ return; }  // 将来有効化 デバッグ用に破壊石もマップに配置する
-        let last_position = stone.route[stone.route.length - 1];
-        this.dungeon.add_stone(last_position.x, last_position.y, stone);
+        let last_position = stone_animation.route[stone_animation.route.length - 1];
+        this.dungeon.add_stone(last_position.x, last_position.y, stone_animation);
     }
 
     // https://editor.p5js.org/RemyDekor/sketches/9jcxFGdHS
@@ -1151,7 +1152,7 @@ class MagicAnimationData{
 
 class Stone{
     constructor(property, cost, damage, maxDistance){
-        this.property = property; // R, L, B
+        this.property = property; // R, L, B(tile_info)
         this.cost = cost; // 実行コスト
         this.damage = damage;
         this.maxDistance = maxDistance; // 飛行距離
@@ -1225,8 +1226,7 @@ class Stone{
             
         }
 
-        // if(this.property == world.tile_info.B.Type)
-        if(this.property == 'B')
+        if(this.property == world.tile_info.B.Type)
         {
             let nextTile = null;
             while(true){
@@ -1416,21 +1416,21 @@ function keyPressed() {
     let stone_damage = -3;
     if (key == 'r'){
         // 右石
-        stone = new Stone("R", 0, stone_damage, stone_distance);
+        stone = new Stone(world.tile_info.R.Type, 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('Migi uchi!');
     }else if(key == 'l'){
         // 左石
-        stone = new Stone("L", 0, stone_damage, stone_distance);
+        stone = new Stone(world.tile_info.L.Type, 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
         console.log('Left uchi!');
     }else if(key == 'b'){
         // 攻撃石
-        stone = new Stone("B", 0, stone_damage, stone_distance);
+        stone = new Stone(world.tile_info.B.Type, 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, 
             {x: my_player._position_x, y: my_player._position_y},
             {x: 1, y: 0});
@@ -1447,7 +1447,7 @@ function keyPressed() {
         let magic_animation = new MagicAnimation(my_dungeon, animation_data);
         magic_animation.draw_magic();
         // 破壊するのは将来的には、Magic.execute()で。
-        if(stone.property == 'B'){
+        if(stone.property == world.tile_info.B.Type){
             magic = new Magic(my_player, my_dungeon, 5);
             magic.doBreak(stone, animation_data);
         }
