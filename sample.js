@@ -3,7 +3,51 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/2/26
+///---- 2022/3/12
+
+class MDPoint {
+    constructor(x, y){
+        console.log(`cont: (${x}, ${y})`);
+        this._x = x;
+        this._y = y;
+    }
+
+    get x(){ 
+        console.log(`gettter_x: ${this._x}`);
+        return this._x;
+    }
+ 
+    set x(v){ this._x = v; }
+
+    get y(){ 
+        console.log(`gettter_y: ${this._y}`);
+        return this._y; 
+    }
+    set y(v){ this._y = v; }
+
+    add(point){
+        result = new MDPoint(this._x + point.x, this._y + point.y);
+        return result;
+    }
+
+    sub(point){
+        console.log(`MDPoint:sub (${this._x}, ${this._y}) (${point.x}, ${point.y})`);
+        result = new MDPoint(this._x - point.x, this._y - point.y);
+        return result;
+    }
+
+    equal(point){
+        return (this.equal_x(point) && this.equal_y(point));
+    }
+
+    equal_x(point){
+        return (this._x == point.x);
+    }
+
+    equal_y(point){
+        return (this._y == point.y);
+    }
+}
 
 class MDMath {
     // 固定の方向に曲げてやる
@@ -27,15 +71,15 @@ class MDMath {
     productMaxtirx(matrix, vector){
         let newX = matrix[0][0] * vector.x + matrix[0][1] * vector.y;
         let newY = matrix[1][0] * vector.x + matrix[1][1] * vector.y;
-        return {x: newX, y: newY};
+        return new MDPoint(newX, newY);
     }
 }
 
 function mdMathTest(){
-    let right = {x: 1, y: 0};
-    let down = {x: 0, y: 1};
-    let left = {x: -1, y: 0};
-    let up = {x: 0, y: -1};
+    let right = new MDPoint(1, 0);
+    let down = new MDPoint(0, 1);
+    let left = new MDPoint(-1, 0);
+    let up = new MDPoint(0, -1);
 
     let case1 = {data: right, resultRight: down, resultLeft: up };
     // let case2 = {data: down, resultRight: left, resultLeft: right };
@@ -107,7 +151,8 @@ class SightPattern{
         return pattern;
     }
 
-    get_pattern(x, y, type, sight_size){
+    // player_position: MDPoint
+    get_pattern(player_position, type, sight_size){
         // パターン作成
         let pattern = null;
         if(type == 'square'){
@@ -124,20 +169,20 @@ class SightPattern{
         let result = [];
         let start = (sight_size - ((sight_size + 1) / 2)) * -1;
         let end = start * -1;
-        for(let pattern_x = start; pattern_x <= end; pattern_x++){
-            for(let pattern_y = start; pattern_y <= end; pattern_y++){
+        let position = new MDPoint();
+        // += 1 -> ++MDPointに演算子追加する？
+        for(position.x = start; position.x <= end; position.x += 1){
+            for(position.y = start; position.y <= end; position.y += 1){
                 // プレイヤーからの相対座標とパターンの絶対座標の変換
-                let pattern_x_abs = pattern_x - start;
-                let pattern_y_abs = pattern_y - start;
+                let pattern_abs = position.sub(new MDPoint(start, start));
                 // value == 1が見える位置
-                let value = pattern.get_value(pattern_x_abs , pattern_y_abs);
-                let dungeon_x_abs = x + pattern_x;
-                let dungeon_y_abs = y + pattern_y;
+                let value = pattern.get_value(pattern_abs);
+                let dungeon_abs = player_position.add(position);
                 if(value == 1 && 
-                  (0< dungeon_x_abs && dungeon_x_abs < this._width - 1) &&
-                  (0< dungeon_y_abs && dungeon_y_abs < this._height - 1))
+                  (0 < dungeon_abs.x && dungeon_abs.x < this._width - 1) &&
+                  (0 < dungeon_abs.y && dungeon_abs.y < this._height - 1))
                   {
-                    result.push([pattern_x, pattern_y]);
+                    result.push(new MDPoint(pattern_x, pattern_y));
                   }
             }
         }
@@ -214,8 +259,7 @@ class Dungeon_Mask {
         };
 
         // 前回の視界情報
-        this._prev_x = 2;
-        this._prev_y = 2;
+        this._prev_player_position = new MDPoint(2, 2);
         this._prev_sight_patterns = []; 
 
         this.mask = new MDMap(w, h, this._sight_info.Black.Type); 
@@ -225,26 +269,28 @@ class Dungeon_Mask {
     display(dungeon, player_x, player_y) {
         console.log("Mask.display");
 
-        for (let y = 1; y < this._height - 1; y++) {
-            for (let x = 1; x < this._width - 1; x++) {
+        let positon = new MDPoint(-1, -1);
+        for (positon.y = 1; positon.y < this._height - 1; positon.y += 1) {
+            for (positon.x = 1; positon.x < this._width - 1; positon.x += 1) {
                 
-                let mask_value = this.mask.get_value(x, y);
+                let mask_value = this.mask.get_value(positon.x, positon.y);
                 if (mask_value == this._sight_info.Black.Type) {
                     // 見たことのない場所
-                    this._draw_tile(x, y, this._sight_info.Black.Type);
+                    this._draw_tile(positon, this._sight_info.Black.Type);
                 }
                 else if(mask_value == this._sight_info.Gray.Type){
                     // 一度見たことのある場所
-                    let dungeon_value = dungeon.map.get_value(x, y);
+                    // TODO: dungeon.map.get_value(positon.x, positon.y); をMDPointに対応
+                    let dungeon_value = dungeon.map.get_value(positon.x, positon.y);
                     if (dungeon_value == world.tile_info.Treasure.Type) {//???? != treasure?
-                        this._draw_tile(x, y, this._sight_info.Gray.Type);
+                        this._draw_tile(positon, this._sight_info.Gray.Type);
                     }else if(dungeon_value == world.tile_info.Air.Type) {
-                        this._draw_tile(x, y, this._sight_info.Gray.Type);
+                        this._draw_tile(positon, this._sight_info.Gray.Type);
                     }
                 }
                 else if(mask_value == this._sight_info.Transparent.Type){
                     // 視界がクリアな場所
-                    // if (this._is_in_sight(x, y, player_x, player_y, -1)) {
+                    // if (this._is_in_sight(positon, player_x, player_y, -1)) {
                     //     continue;
                     // }
                 }else{
@@ -259,8 +305,8 @@ class Dungeon_Mask {
     }
 
     // sight: 視界
-    _is_in_sight(x, y, player_x, player_y, sight) {
-        return x == player_x && y == player_y;
+    _is_in_sight(position, player_position, sight) {
+        return position.equal(player_position);
     }
     
     _get_tile_color(tile_type) {
@@ -271,42 +317,41 @@ class Dungeon_Mask {
         return this._sight_info.Bedrock.Color; // error
     }
 
-    _draw_tile(x, y, tile_type) {
+    _draw_tile(position, tile_type) {
         let color = this._get_tile_color(tile_type);
         fill(color);
 
-        rect(x * 20, y * 20, 20, 20);
+        rect(position.x * 20, position.y * 20, 20, 20);
     }
 
     // 視界を広げる
     // sight: 視界サイズ
-    update(x, y, sight) {
-        let patterns = this._sight_pattern.get_pattern(x, y, 'cross', sight);
+    update(player_position, sight) {
+        let patterns = this._sight_pattern.get_pattern(player_position, 'cross', sight);
         this.fill_prev_sight();
-        this.fill_sight_pattern(x, y, patterns);
-        this.store_sight_info(x, y, patterns);
+        this.fill_sight_pattern(player_position, patterns);
+        this.store_sight_info(player_position, patterns);
     }
 
 
     // 前回の視界（透明）を灰色で埋める
     fill_prev_sight(){
         for(let pattern of this._prev_sight_patterns){
-            this.mask.update(this._prev_x + pattern[0], this._prev_y + pattern[1], this._sight_info.Gray.Type);
+            this.mask.update(this._prev_player_position.add(pattern), this._sight_info.Gray.Type);
         }
     }
 
     // 視界範囲を透明で塗りつぶす
-    fill_sight_pattern(x, y, patterns){
-        // [[-1, 0], [-1,-1],[0,-1],,,[0,1]] 視界あける位置リスト（補正値）
+    fill_sight_pattern(player_position, patterns){
+        // [MDPoint(-1, 0), ...] 視界あける位置リスト（補正値）
         for(let pattern of patterns){
-            this.mask.update(x + pattern[0], y + pattern[1], this._sight_info.Transparent.Type);
+            this.mask.update(player_position.add(pattern), this._sight_info.Transparent.Type);
         }
     }
 
     // 視界情報を保管
-    store_sight_info(x, y, patterns){
-        this._prev_x = x;
-        this._prev_y = y;
+    store_sight_info(player_position, patterns){
+        this._prev_player_position = player_position;
         this._prev_sight_patterns = patterns;
     }
 }
