@@ -8,32 +8,24 @@
 class MDPoint {
     constructor(x, y){
         console.log(`cont: (${x}, ${y})`);
-        this._x = x;
-        this._y = y;
+        this.x = x;
+        this.y = y;
     }
-
-    get x(){ 
-        console.log(`gettter_x: ${this._x}`);
-        return this._x;
-    }
- 
-    set x(v){ this._x = v; }
-
-    get y(){ 
-        console.log(`gettter_y: ${this._y}`);
-        return this._y; 
-    }
-    set y(v){ this._y = v; }
 
     add(point){
-        result = new MDPoint(this._x + point.x, this._y + point.y);
+        result = new MDPoint(this.x + point.x, this.y + point.y);
         return result;
     }
 
     sub(point){
-        console.log(`MDPoint:sub (${this._x}, ${this._y}) (${point.x}, ${point.y})`);
-        result = new MDPoint(this._x - point.x, this._y - point.y);
+        console.log(`MDPoint:sub (${this.x}, ${this.y}) (${point.x}, ${point.y})`);
+        result = new MDPoint(this.x - point.x, this.y - point.y);
         return result;
+    }
+
+    set(x, y){
+        this.x = x;
+        this.y = y;
     }
 
     equal(point){
@@ -41,11 +33,11 @@ class MDPoint {
     }
 
     equal_x(point){
-        return (this._x == point.x);
+        return (this.x == point.x);
     }
 
     equal_y(point){
-        return (this._y == point.y);
+        return (this.y == point.y);
     }
 }
 
@@ -105,6 +97,8 @@ class Room_Config {
     constructor(min_width, min_height, max_width, max_height) {
         this.min_width = min_width;
         this.min_height = min_height;
+        // min = new MDPoint(min_width, min_hight)
+        // min = new MDBounds(min_width, min_hight)
         this.max_width = max_width;
         this.max_height = max_height;
     }
@@ -215,8 +209,8 @@ class MDMap { // [M]achi to [D]ungen no [Map]
     }
 
     // タイルの値を更新, set_valueと同等
-    update(x, y, value) {
-        let i = this.convert_2dTo1d(x, y);
+    update(position, value) {
+        let i = this.convert_2dTo1d(position);
         this.map[i] = value;
     }
 
@@ -230,14 +224,15 @@ class MDMap { // [M]achi to [D]ungen no [Map]
         return Math.floor(index / this._width);
     }
 
-    // 2次元の位置(x, y)を1次元の位置に変換
-    convert_2dTo1d(x, y) {
-        return y * this._width + x;
+    // 2次元の位置(position)を1次元の位置に変換
+    // position: MDPoint
+    convert_2dTo1d(position) {
+        return position.y * this._width + position.x;
     }
     
-    // (x, y)の値を取得
-    get_value(x, y) {
-        var index = this.convert_2dTo1d(x, y);
+    // position: MDPointの値を取得
+    get_value(position) {
+        var index = this.convert_2dTo1d(position);
         return this.map[index];
     }
 
@@ -266,22 +261,22 @@ class Dungeon_Mask {
         this._sight_pattern = new SightPattern(w, h);
     }
     
-    display(dungeon, player_x, player_y) {
+    // player_position: MDPoint
+    display(dungeon, player_position) {
         console.log("Mask.display");
 
         let positon = new MDPoint(-1, -1);
         for (positon.y = 1; positon.y < this._height - 1; positon.y += 1) {
             for (positon.x = 1; positon.x < this._width - 1; positon.x += 1) {
                 
-                let mask_value = this.mask.get_value(positon.x, positon.y);
+                let mask_value = this.mask.get_value(positon);
                 if (mask_value == this._sight_info.Black.Type) {
                     // 見たことのない場所
                     this._draw_tile(positon, this._sight_info.Black.Type);
                 }
                 else if(mask_value == this._sight_info.Gray.Type){
                     // 一度見たことのある場所
-                    // TODO: dungeon.map.get_value(positon.x, positon.y); をMDPointに対応
-                    let dungeon_value = dungeon.map.get_value(positon.x, positon.y);
+                    let dungeon_value = dungeon.map.get_value(positon);
                     if (dungeon_value == world.tile_info.Treasure.Type) {//???? != treasure?
                         this._draw_tile(positon, this._sight_info.Gray.Type);
                     }else if(dungeon_value == world.tile_info.Air.Type) {
@@ -290,7 +285,7 @@ class Dungeon_Mask {
                 }
                 else if(mask_value == this._sight_info.Transparent.Type){
                     // 視界がクリアな場所
-                    // if (this._is_in_sight(positon, player_x, player_y, -1)) {
+                    // if (this._is_in_sight(positon, player_position, -1)) {
                     //     continue;
                     // }
                 }else{
@@ -300,7 +295,7 @@ class Dungeon_Mask {
         }
 
         // why get_value() value == 0? 2021/08/14
-        // console.log('display_mask: '+'dungeon_value(player) =' + dungeon.get_value(player_x, player_y));
+        // console.log('display_mask: '+'dungeon_value(player) =' + dungeon.get_value(player_position));
 
     }
 
@@ -531,13 +526,14 @@ class Dungeon {
     _make_one_room(room_width, room_height) {
         console.log("_make_one_room");
 
-        // 作る部屋の左上の座標(周囲の岩盤を考慮)
+        // 作る部屋の左上 upperlfet の座標(周囲の岩盤を考慮)
         let left_x = this._get_random_range(1, (this._width - 1) - (room_width - 1));
         let upper_y = this._get_random_range(1, (this._height - 1) - (room_height - 1));
 
-        for (let y = upper_y; y < upper_y + room_height; y++) {
-            for (let x = left_x; x < left_x + room_width; x++) {
-                this.dig_wall(x, y);
+        let position = new MDPoint(left_x, upper_y);
+        for ( ; position.y < upper_y + room_height; position.y++) {
+            for ( ; position.x < left_x + room_width; position.x++) {
+                this.dig_wall(position);
             }
         }
     }
@@ -552,9 +548,12 @@ class Dungeon {
     // 宝箱のホワイトリスト
     // 宝箱が重ならないように
     _create_treasure_white_list() {
-        for (let y = 1; y < this._height - 1; y++) {
-            for (let x = 1; x < this._width - 1; x++) {
-                let index = this.map.convert_2dTo1d(x, y);
+        // 岩盤を避けるため1, 1から
+        const bedrockOffset = 1;
+        let positon = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
+        for (; positon.y < this._height - bedrockOffset; positon.y++) {
+            for (; positon.x < this._width - bedrockOffset; positon.x++) {
+                let index = this.map.convert_2dTo1d(positon);
                 this._treasure_white_list.push(index);
             }
         }
@@ -563,7 +562,7 @@ class Dungeon {
     // 宝箱の位置の壁に穴をあける
     _dig_wall_in_treasure(){
         for(let treasure of this._treasureList.get()){
-            this.dig_wall(treasure._position_x, treasure._position_y);
+            this.dig_wall(treasure._position);
         }
     }
 
@@ -574,12 +573,14 @@ class Dungeon {
         this._dig_wall_in_enemy();
     }
 
-    // 宝箱のホワイトリスト
-    // 宝箱が重ならないように
+    // 敵のホワイトリスト
+    // 敵が重ならないように
     _create_enemy_white_list() {
-        for (let y = 1; y < this._height - 1; y++) {
-            for (let x = 1; x < this._width - 1; x++) {
-                let index = this.map.convert_2dTo1d(x, y);
+        const bedrockOffset = 1;
+        let positon = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
+        for (; positon.y < this._height - bedrockOffset; positon.y++) {
+            for (; positon.x < this._width - bedrockOffset; positon.x++) {
+                let index = this.map.convert_2dTo1d(positon);
                 this._enemy_white_list.push(index);
             }
         }
@@ -588,7 +589,7 @@ class Dungeon {
     // 宝箱の位置の壁に穴をあける
     _dig_wall_in_enemy(){
         for(let enemy of this._enemyList.get()){
-            this.dig_wall(enemy._position_x, enemy._position_y);
+            this.dig_wall(enemy._position);
         }
     }
 
@@ -602,17 +603,19 @@ class Dungeon {
     }
 
     // mapのx, yの位置を岩盤で埋める
-    fill_bedrock(x, y) {
-        this.map.update(x, y, world.tile_info.Bedrock.Type);
+    // position: MDPoint
+    fill_bedrock(position) {
+        this.map.update(position, world.tile_info.Bedrock.Type);
     }
     
     // mapのx, yの位置に空間を開ける
-    dig_wall(x, y){
-        let value = this.map.get_value(x, y);
+    // position: MDPoint
+    dig_wall(position){
+        let value = this.map.get_value(position);
         if (value == world.tile_info.Bedrock.Type) {
             return;
         }
-        this.map.update(x, y, world.tile_info.Air.Type);
+        this.map.update(position, world.tile_info.Air.Type);
     }
 
     // 最初の空間座標を取得する
@@ -627,10 +630,10 @@ class Dungeon {
     // 岩盤以外のランダムな座標を取得
     get_random_index() {
         // 岩盤以外の座標
-        let x = this._get_random_range(1, (this._width - 1));
-        let y = this._get_random_range(1, (this._height - 1));
+        let position = new MDPoint(this._get_random_range(1, (this._width - 1)), 
+                                    this._get_random_range(1, (this._height - 1)));
 
-        let index = this.map.convert_2dTo1d(x, y);
+        let index = this.map.convert_2dTo1d(position);
         return index;
     }
 
@@ -654,40 +657,48 @@ class Dungeon {
         return map_index;
     }
 
-    is_bedrock(x, y) {
-        let value = this.map.get_value(x, y);
+    // position: MDPoint
+    is_bedrock(position) {
+        let value = this.map.get_value(position);
         return (value == world.tile_info.Bedrock.Type);
     }
     
-    is_wall(x, y) {
-        let value = this.map.get_value(x, y);
+    // position: MDPoint
+    is_wall(position) {
+        let value = this.map.get_value(position);
         return (value == world.tile_info.Wall.Type);
     }
 
     // 宝箱関係
-    is_exist_treasure(x, y) {
-        return this._treasureList.is_exist_treasure(x, y);
+    // position: MDPoint
+    is_exist_treasure(position) {
+        return this._treasureList.is_exist_treasure(position);
     }
     
-    is_opened_treasure(x, y) {
-        return this._treasureList.is_opened_treasure(x, y);
+    // position: MDPoint
+    is_opened_treasure(position) {
+        return this._treasureList.is_opened_treasure(position);
     }
     
-    open_treasure(x, y) {
-        return this._treasureList.open_treasure(x, y);
+    // position: MDPoint
+    open_treasure(position) {
+        return this._treasureList.open_treasure(position);
     }
 
     // 敵関係
-    is_exist_enemy(x, y) {
-        return this._enemyList.is_exist_enemy(x, y);
+    // position: MDPoint
+    is_exist_enemy(position) {
+        return this._enemyList.is_exist_enemy(position);
     }
 
-    attack_enemy(x, y) {
-        return this._enemyList.attack_enemy(x, y);
+    // position: MDPoint
+    attack_enemy(position) {
+        return this._enemyList.attack_enemy(position);
     }
 
-    attacked_enemy(x, y) {
-        return this._enemyList.attacked_enemy(x, y);
+    // position: MDPoint
+    attacked_enemy(position) {
+        return this._enemyList.attacked_enemy(position);
     }
 
 }
@@ -699,17 +710,17 @@ class MDObject{
     constructor(my_dungeon, color) {
         this._dungeon = my_dungeon;
         
-        this._position_x = 0;
-        this._position_y = 0;
-
+        this._position = new MDPoint(0, 0);
+        
         this._color = null;
     }
 
     make() {
     }
 
-    is_exist(x, y) {
-        let is_exist = (this._position_x == x && this._position_y == y);
+    //position: MDPoint
+    is_exist(position) {
+        let is_exist = this._position.equal(position);
         return is_exist;
     }
     
@@ -717,7 +728,7 @@ class MDObject{
         console.log("MDObject.display");
 
         // 色情報を一緒に与えられるといいな
-        // this._dungeon.display(this._position_x, this._position_y, this.color);
+        // this._dungeon.display(this._position, this.color);
     }
 }
 
@@ -744,9 +755,10 @@ class MDObjectList{
         return this._object_list;
     }
 
-    get_md_object(x, y) {
+    // position: MDPoint
+    get_md_object(position) {
         for (let i = 0; i < this._count; i++) {
-            if (this._object_list[i].is_exist(x, y)) {
+            if (this._object_list[i].is_exist(position)) {
                 return this._object_list[i];
             }
         }
@@ -754,8 +766,9 @@ class MDObjectList{
         return null;
     }
 
-    is_exist( x, y) {
-        let md_object = this.get_md_object(x, y);
+    // position: MDPoint
+    is_exist(position) {
+        let md_object = this.get_md_object(position);
         if (md_object == null)
             return false;
         
@@ -774,9 +787,7 @@ class Player {
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
         this._hp = 10;
-        this._position_x = 0;
-        this._position_y = 0;
-
+        this._position = new MDPoint(0, 0);
         this._sight_size = 5;
 
         this._make();
@@ -789,54 +800,52 @@ class Player {
         
         let index = this._dungeon.get_random_index();
         // ToDo position.x, position.y にまとめたい
-        this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
-        this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
-        this._dungeon.dig_wall(this._position_x, this._position_y);
-        this._dungeon.update_mask(this._position_x, this._position_y, this._sight_size);
+        this._position.x = this._dungeon.map.convert_1dTo2d_x(index);
+        this._position.y = this._dungeon.map.convert_1dTo2d_y(index);
+        this._dungeon.dig_wall(this._position);
+        this._dungeon.update_mask(this._position, this._sight_size);
     }
     
     display() {
         console.log("player.display");
 
         // this._dungeon.display_dungeon();
-        this._dungeon.display_player(this._position_x, this._position_y);
+        this._dungeon.display_player(this._position);
         this._stats.display();
     }
 
-    // dir_x, dir_y: 移動量
-    move(dir_x, dir_y) {
-        let next_x = this._position_x + dir_x;
-        let next_y = this._position_y + dir_y;
-
-        if (this._dungeon.is_bedrock(next_x, next_y)) {
+    // direction: MDPoint 移動量
+    move(direction) {
+        let next = this._position.add(direction);
+        if (this._dungeon.is_bedrock(next)) {
             // 行き先が岩盤の移動はなし
-        } else if (this._dungeon.is_wall(next_x, next_y)) {
+        } else if (this._dungeon.is_wall(next)) {
             // 行き先が壁の場合は掘る(移動はなし)
-            this._dungeon.dig_wall(next_x, next_y);
+            this._dungeon.dig_wall(next);
             this._stats.add_dig_wall();
         } else {
             // 敵がいるか
-            let is_exist_enemy = this._dungeon.is_exist_enemy(next_x, next_y);
+            let is_exist_enemy = this._dungeon.is_exist_enemy(next);
             if(is_exist_enemy){
-                let enemy = this._dungeon.attacked_enemy(next_x, next_y);
+                let enemy = this._dungeon.attacked_enemy(next);
                 if(!enemy.is_alive()){
                     this._stats.add_kill_enemy();
                 }
                 return;
             }
+
             // 進む
-            this._position_x = next_x;
-            this._position_y = next_y;
+            this._position = next;
             this._stats.add_walk();
-            this._dungeon.update_mask(next_x, next_y, this._sight_size); // 視界サイズ
+            this._dungeon.update_mask(next, this._sight_size); // 視界サイズ
 
             // 宝箱
-            let is_exist_treasure = this._dungeon.is_exist_treasure(this._position_x, this._position_y)
+            let is_exist_treasure = this._dungeon.is_exist_treasure(this._position)
             if (is_exist_treasure) {
                 
-                let is_opened_treasure = this._dungeon.is_opened_treasure(this._position_x, this._position_y);
+                let is_opened_treasure = this._dungeon.is_opened_treasure(this._position);
                 if (!is_opened_treasure) {
-                    this._dungeon.open_treasure(this._position_x, this._position_y);
+                    this._dungeon.open_treasure(this._position);
                     this._stats.add_pickup_treasure();
                 }
             }
@@ -902,6 +911,8 @@ class Treasure extends MDObject{
     constructor(my_dungeon) {
         super(my_dungeon, null);
 
+        this._position = new MDPoint(0, 0);
+
         this._opened = false;
         this._make();
     }
@@ -911,9 +922,8 @@ class Treasure extends MDObject{
 
         // ランダム位置に配置(岩盤以外)
         let index = this._dungeon.get_random_treasure_index();
-
-        this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
-        this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
+        // TODO: convert_1dTo2d_x, yをMDPointで返す
+        this._position = new MDPoint(this._dungeon.map.convert_1dTo2d_x(index), this._dungeon.map.convert_1dTo2d_y(index))
     }
 
     is_opened() {
@@ -927,7 +937,7 @@ class Treasure extends MDObject{
     display(){
         console.log("treasure.display");
 
-        this._dungeon.display_treasure(this._position_x, this._position_y);
+        this._dungeon.display_treasure(this._position);
     }
 }
 
@@ -944,24 +954,28 @@ class TreasureList extends MDObjectList{
         }
     }
 
-    get_treasure(x, y){
-        return this.get_md_object(x, y);
+    // position: MDPoint
+    get_treasure(position){
+        return this.get_md_object(position);
     }
 
-    is_exist_treasure(x, y){
-        return this.is_exist(x, y);
+    // position: MDPoint
+    is_exist_treasure(position){
+        return this.is_exist(position);
     }
 
-    is_opened_treasure(x, y) {
-        let treasure = this.get_treasure(x, y);
+    // position: MDPoint
+    is_opened_treasure(position) {
+        let treasure = this.get_treasure(position);
         if (treasure == null)
             return false;
         
         return treasure.is_opened(); // Treasure が is_opend()を持ってる前提
     }
     
-    open_treasure(x, y) {
-        let treasure = this.get_treasure(x, y);
+    // position: MDPoint
+    open_treasure(position) {
+        let treasure = this.get_treasure(position);
         if (treasure == null) {
             return false;
         }
@@ -979,6 +993,7 @@ class Enemy extends MDObject {
         // 種族とかでhpとか制御したい
         // hp以外の属性も欲しい(火属性に弱いとか)
         this._hp = 5;
+        this._position = new MDPoint(0, 0);
 
         this._make();
     }
@@ -988,9 +1003,8 @@ class Enemy extends MDObject {
 
         // ランダム位置に配置(岩盤以外)
         let index = this._dungeon.get_random_enemy_index();
-
-        this._position_x = this._dungeon.map.convert_1dTo2d_x(index);
-        this._position_y = this._dungeon.map.convert_1dTo2d_y(index);
+        // TODO: x, yをまとめる
+        this.position = new MDPoint(this._dungeon.map.convert_1dTo2d_x(index), this._dungeon.map.convert_1dTo2d_y(index))
     }
     
     attack() {
@@ -1002,8 +1016,8 @@ class Enemy extends MDObject {
 
         this._hp += damage;
         if (!this.is_alive()){
-            this._position_x = -1;
-            this._position_y = -1;
+            // マップ外に移動させる
+            this._position.set(-1, -1);
         }
     }
 
@@ -1015,7 +1029,7 @@ class Enemy extends MDObject {
         console.log("enemy.display");
 
         if(this.is_alive){
-            this._dungeon.display_enemy(this._position_x, this._position_y);
+            this._dungeon.display_enemy(this._position);
         }
     }
 }
@@ -1033,17 +1047,20 @@ class EnemyList extends MDObjectList {
         }
     }
 
-    get_enemy(x, y){
-        return this.get_md_object(x, y);
+    // position: MDPoint
+    get_enemy(position){
+        return this.get_md_object(position);
     }
 
-    is_exist_enemy(x, y){
-        return this.is_exist(x, y);
+    // position: MDPoint
+    is_exist_enemy(position){
+        return this.is_exist(position);
     }
 
     // enemyがtargetに攻撃する
-    attack_enemy(x, y, target) {
-        let enemy = this.get_enemy(x, y);
+    // position: MDPoint
+    attack_enemy(position, target) {
+        let enemy = this.get_enemy(position);
         if (enemy == null) {
             return false;
         }
@@ -1053,8 +1070,9 @@ class EnemyList extends MDObjectList {
     }
 
     // enemyがtarget?攻撃される
-    attacked_enemy(x, y, damage) {
-        let enemy = this.get_enemy(x, y);
+    // position: MDPoint
+    attacked_enemy(position, damage) {
+        let enemy = this.get_enemy(position);
         if (enemy == null) {
             return false;
         }
@@ -1147,12 +1165,13 @@ class MagicAnimation{
         for (let i = 0; i < stone_animation.route.length; i++) {
             if(prev_position != null){
                 // 前回配置した石のアニメを消す
-                this.dungeon.display_air(prev_position.x, prev_position.y);    
+                this.dungeon.display_air(prev_position);    
             }
 
             const position = stone_animation.route[i]; // {x: 1, y: 2}
             prev_position = position;
-            this.dungeon.display_stone(position.x, position.y, stone_animation);
+            
+            this.dungeon.display_stone(position, stone_animation);
             console.log('draw_stone loop');
             // アニメフレーム待機
             await this.sleep(stone_animation.speed);
@@ -1162,7 +1181,7 @@ class MagicAnimation{
         if(stone_animation.route.length == 0){ return; } 
         // if(ston.property == 'B'){ return; }  // 将来有効化 デバッグ用に破壊石もマップに配置する
         let last_position = stone_animation.route[stone_animation.route.length - 1];
-        this.dungeon.add_stone(last_position.x, last_position.y, stone_animation);
+        this.dungeon.add_stone(last_position, stone_animation);
     }
 
     // https://editor.p5js.org/RemyDekor/sketches/9jcxFGdHS
@@ -1181,12 +1200,13 @@ class MagicAnimation{
 class MagicAnimationData{
     constructor(property, speed){
         this.property = property; // R, L...
-        this.route = []; // [{x: 1, y: 2}, {x: 1, y: 3}] // 石の位置(経路)
+        this.route = []; // [MDPoint(1, 2), MDPoint(3, 4)] // 石の位置(経路)
         this.speed = speed; // 5 描画時間(ms) 
     }
 
-    push(postion_x, position_y){
-        this.route.push({x: postion_x, y: position_y});
+    // position: MDPoint
+    push(postion){
+        this.route.push(position);
     }
 
     last(){
@@ -1203,14 +1223,16 @@ class Stone{
         this.maxDistance = maxDistance; // 飛行距離
 
         this.leftDistance = maxDistance; // 残りの距離
-        this.position = null; // {x, y}
-        this.direction = null; // {x, y}
+        this.position = new MDPoint(0, 0);
+        this.direction = new MDPoint(0, 0);
     }
 
     // 2021/12/18 うごいた！
     // leftDistance にバグあり。１つ遠くまで飛ぶよ。
     // 2022/1/22 なおったよ！(置くのをあとにしたよ)
     // （元execute) 魔法石の飛ぶルート/magic_animatiion_dataを返す
+    // position: MDPoint
+    // direction: MDPoint
     calc_route(dungeon, position, direction){
         let magic_animation_data = new MagicAnimationData(this.property, 300);
 
@@ -1220,18 +1242,15 @@ class Stone{
         let watchDogCount = 0; // 進んだ距離 反射がループしているか監視
 
         while (this.leftDistance >= 0) {
-            let next = {
-                x: this.position.x + this.direction.x,
-                y: this.position.y + this.direction.y
-            };
+            let next = this.position.add(this.direction);
     
-            let nextTile = dungeon.get_value(next.x, next.y);
+            let nextTile = dungeon.get_value(next);
             console.log(`反射ありの経路計算 次のタイル: ${nextTile}`);
             switch (nextTile) {
                 case world.tile_info.Air.Type:
                     this.leftDistance -= 1;
-                    this.position = {x: next.x, y: next.y};
-                    magic_animation_data.push(next.x, next.y);
+                    this.position.set(next.x, next.y);
+                    magic_animation_data.push(next);
                     watchDogCount = 0;
                     console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
                     break;
@@ -1267,8 +1286,6 @@ class Stone{
                     console.log('Stone::calc_route 次タイルの判定に失敗しました。');
                     break;
             }
-
-            
         }
 
         if(this.property == world.tile_info.B.Type)
@@ -1276,16 +1293,12 @@ class Stone{
             let nextTile = null;
             while(true){
                 // 破壊石 直線で何かに当たるまで経路計算
-                let next = {
-                    x: this.position.x + this.direction.x,
-                    y: this.position.y + this.direction.y
-                };
-
-                nextTile = dungeon.get_value(next.x, next.y);
+                let next = this.position.add(this.direction);
+                nextTile = dungeon.get_value(next);
                 console.log(`反射"なし"の経路計算 次のタイル: ${nextTile}`);
                 
-                this.position = {x: next.x, y: next.y};
-                magic_animation_data.push(next.x, next.y);
+                this.position.set(next.x, next.y);
+                magic_animation_data.push(next);
                 
                 // Air, Treasure はスルー、それ以外衝突
                 // magic_animation_data の最後は、当たった相手の座標
@@ -1362,20 +1375,20 @@ class Magic{
     doBreak(stone, magic_animation_data){
         if(magic_animation_data == null){return;}
         let target = magic_animation_data.last();
-        let targetTile = this._dungeon.get_value(target.x, target.y);
+        let targetTile = this._dungeon.get_value(target);
 
         // 別の関数の話
         // ブレイク石の場合はマップに配置しない(現在配置しているので、石の種類を見て調整する必要がある)
 
         switch (targetTile) {
             case world.tile_info.Wall.Type:
-                this._dungeon.dig_wall(target.x, target.y);
+                this._dungeon.dig_wall(target);
                 // 壁を破壊
                 break;
             case world.tile_info.R.Type:
             case world.tile_info.L.Type:
                 // 将来的に石はダンジョンに直配置しない(宝箱などと同じ)場合は削除対象を変更する必要がある
-                this._dungeon.dig_wall(target.x, target.y);
+                this._dungeon.dig_wall(target);
                 // 石を破壊
                 break;
             case world.tile_info.B.Type:
@@ -1384,7 +1397,7 @@ class Magic{
                 break;
             case world.tile_info.Enemy.Type:
                 // 敵にダメージ
-                let enemy = this._dungeon._enemyList.attacked_enemy(target.x, target.y, stone.damage);
+                let enemy = this._dungeon._enemyList.attacked_enemy(target, stone.damage);
                 if(!enemy.is_alive()){
                     this._player._stats.add_kill_enemy();
                 }
@@ -1446,7 +1459,7 @@ function draw(){
 let stone_distance = 5;
 function keyPressed() {
     if (key == 'w') { //up
-        my_player.move(0, -1);
+        my_player.move(0, -1);// MDPointに直す 2022/3/26 
     } else if (key == 'a') { //left
         my_player.move(-1, 0);
     } else if (key == 's') { //right
