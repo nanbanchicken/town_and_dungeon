@@ -739,7 +739,8 @@ class MDObjectList{
         this._count = count;
         this._object_list = []; //is_exist()を持つものにかぎる/MDobjectの継承クラスに限る
 
-        this._make();
+        // ここで_makeすると継承されたクラスの_makeを呼び出してしまう
+        //this._make();
     }
 
     // Enemyとかをコピーできるはず
