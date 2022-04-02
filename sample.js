@@ -7,19 +7,17 @@
 
 class MDPoint {
     constructor(x, y){
-        console.log(`cont: (${x}, ${y})`);
         this.x = x;
         this.y = y;
     }
 
     add(point){
-        result = new MDPoint(this.x + point.x, this.y + point.y);
+        let result = new MDPoint(this.x + point.x, this.y + point.y);
         return result;
     }
 
     sub(point){
-        console.log(`MDPoint:sub (${this.x}, ${this.y}) (${point.x}, ${point.y})`);
-        result = new MDPoint(this.x - point.x, this.y - point.y);
+        let result = new MDPoint(this.x - point.x, this.y - point.y);
         return result;
     }
 
