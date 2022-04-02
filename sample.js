@@ -165,8 +165,7 @@ class SightPattern{
         let result = [];
         let start = (sight_size - ((sight_size + 1) / 2)) * -1;
         let end = start * -1;
-        let position = new MDPoint();
-        // += 1 -> ++MDPointに演算子追加する？
+        let position = new MDPoint(0, 0);
         for(position.x = start; position.x <= end; position.x += 1){
             for(position.y = start; position.y <= end; position.y += 1){
                 // プレイヤーからの相対座標とパターンの絶対座標の変換
@@ -405,61 +404,69 @@ class Dungeon {
         this.map = new MDMap(this._width, this._height, world.tile_info.Air.Type);
 
         // 岩盤で周囲を囲む
-        for (let y = 0; y < this._height; y++) {
-            for (let x = 0; x < this._width; x++) {
-                if (x == 0 || x == this._width - 1 || y == 0 || y == this._height - 1) {
-                    this.fill_bedrock(x, y);
-                }
+        let position = new MDPoint(0 ,0);
+        for (position.y = 0; position.y < this._height; position.y++) {
+            for (position.x = 0; position.x < this._width; position.x++) {
+                if (!(position.x == 0 || position.x == this._width - 1 || 
+                      position.y == 0 || position.y == this._height - 1)){ continue; }
+                this.fill_bedrock(position);
             }
         }
     }
 
-    display_mask(player_x, player_y) {
-        this._mask.display(this, player_x, player_y);
+    // player_position: MDPoint
+    display_mask(player_position) {
+        this._mask.display(this, player_position);
     }
     
-    update_mask(player_x, player_y, sight) {
-        this._mask.update(player_x, player_y, sight);
+    // player_position: MDPoint
+    update_mask(player_position, sight) {
+        this._mask.update(player_position, sight);
     }
  
     display()  {
         console.log("dungeon.display");
         
-        for (let y = 0; y < this._height; y++){
-            for(let x=0; x < this._width; x++){
-                this._draw_tile(x, y, this.get_value(x, y));
+        let position = new MDPoint(0, 0);
+        for(position.y = 0; position.y < this._height; position.y++){
+            for(position.x = 0; position.x < this._width; position.x++){
+                this._draw_tile(position, this.get_value(position));
             }
         }
     }
 
-    get_value(x, y){
+    // 座標に格納されている値を取得
+    // position: MDPoint
+    get_value(position){
         // TODO
         // mapオブジェクトと、enemy, treasure の優先度を考える
         //
-        // 済 dungeon.map, enemy_list, treasure_list, magic_stone_listを参照して値を返す
-        // 済 これはenemy, treasureを見てない
-        // 済 magic_stone_listはまだない(マップに値を直接挿入している)
-        if(this._treasureList.is_exist_treasure(x, y)){
+        // magic_stone_listはまだない(マップに値を直接挿入している)
+        if(this._treasureList.is_exist_treasure(position)){
             return world.tile_info.Treasure.Type;
         }
-        else if(this._enemyList.is_exist_enemy(x, y)){
+        else if(this._enemyList.is_exist_enemy(position)){
             return world.tile_info.Enemy.Type;
         }
 
-        return this.map.get_value(x, y);
+        // 魔法石の情報もmap内に入っている
+        return this.map.get_value(position);
     }
 
     // プレイヤーを表示
-    display_player(x, y) {
-        this._draw_tile(x, y, world.tile_info.Player.Type);
+    // position: MDPoint
+    display_player(position) {
+        this._draw_tile(position, world.tile_info.Player.Type);
     }
 
-    display_air(x, y) {
-        this._draw_tile(x, y, world.tile_info.Air.Type);
+    // position: MDPoint
+    display_air(position) {
+        this._draw_tile(position, world.tile_info.Air.Type);
     }
 
-    display_stone(x, y, stone_animation) {
-        this._draw_tile(x, y, stone_animation.property);
+    // position: MDPoint
+    display_stone(position, stone_animation) {
+        this._draw_tile(position, stone_animation.property);
     }
 
     display_treasures() {
@@ -470,19 +477,22 @@ class Dungeon {
         this._enemyList.display();
     }
     
-    display_treasure(x, y) {
-        this._draw_tile(x, y, world.tile_info.Treasure.Type);
+    // position: MDPoint
+    display_treasure(position) {
+        this._draw_tile(position, world.tile_info.Treasure.Type);
     }
 
-    display_enemy(x, y) {
-        this._draw_tile(x, y, world.tile_info.Enemy.Type);
+    // position: MDPoint
+    display_enemy(position) {
+        this._draw_tile(position, world.tile_info.Enemy.Type);
     }
 
     // 魔法石を置く
-    add_stone(x, y, stone_animation){
+    // position: MDPoint
+    add_stone(position, stone_animation){
         // stoneListは現状他で参照していない
-        this._stoneList.push({x: x, y: y, property: stone_animation.property});
-        this.map.update(x, y, stone_animation.property);
+        this._stoneList.push({position, property: stone_animation.property});
+        this.map.update(position, stone_animation.property);
     }
 
     // 
@@ -496,15 +506,16 @@ class Dungeon {
    
     }
 
-    _draw_tile(x, y, tile_type) {
+    // position: MDPoint
+    _draw_tile(position, tile_type) {
         let color = this._get_tile_color(tile_type);
         fill(color);
 
         if (tile_type == world.tile_info.Player.Type) {
             ellipseMode(CORNER);
-            ellipse(x * 20, y * 20, 20, 20);
+            ellipse(position.x * 20, position.y * 20, 20, 20);
         }  else {
-            rect(x * 20, y * 20, 20, 20);
+            rect(position.x * 20, position.y * 20, 20, 20);
         }
     }
 
@@ -1461,40 +1472,37 @@ function draw(){
 
 let stone_distance = 5;
 function keyPressed() {
+    let player_direction = null;
     if (key == 'w') { //up
-        my_player.move(0, -1);// MDPointに直す 2022/3/26 
+        player_direction = new MDPoint(0, -1);
     } else if (key == 'a') { //left
-        my_player.move(-1, 0);
+        player_direction = new MDPoint(-1, 0);
     } else if (key == 's') { //right
-        my_player.move(0, 1);
+        player_direction = new MDPoint(0, 1);
     } else if (key == 'd') { //down
-        my_player.move(1, 0);
+        player_direction = new MDPoint(1, 0);
     }
+    my_player.move(player_direction);
 
     // 魔法のテストったらテスト
     let animation_data = null;
     let stone = null;
     let stone_damage = -3;
+    let stone_direction = new MDPoint(1, 0); // (1,0)はテスト用
     if (key == 'r'){
         // 右石
         stone = new Stone(world.tile_info.R.Type, 0, stone_damage, stone_distance);
-        animation_data = stone.calc_route(my_dungeon, 
-            {x: my_player._position_x, y: my_player._position_y},
-            {x: 1, y: 0});
+        animation_data = stone.calc_route(my_dungeon, my_player._position, stone_direction);
         console.log('Migi uchi!');
     }else if(key == 'l'){
         // 左石
         stone = new Stone(world.tile_info.L.Type, 0, stone_damage, stone_distance);
-        animation_data = stone.calc_route(my_dungeon, 
-            {x: my_player._position_x, y: my_player._position_y},
-            {x: 1, y: 0});
+        animation_data = stone.calc_route(my_dungeon, my_player._position, stone_direction);
         console.log('Left uchi!');
     }else if(key == 'b'){
         // 攻撃石
         stone = new Stone(world.tile_info.B.Type, 0, stone_damage, stone_distance);
-        animation_data = stone.calc_route(my_dungeon, 
-            {x: my_player._position_x, y: my_player._position_y},
-            {x: 1, y: 0});
+        animation_data = stone.calc_route(my_dungeon, my_player._position, stone_direction);
         console.log('Break uchi!');
     }else if(!isNaN(key) && key != ' '){
         // 数値 石の飛距離変更
