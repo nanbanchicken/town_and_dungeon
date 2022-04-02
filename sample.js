@@ -37,6 +37,10 @@ class MDPoint {
     equal_y(point){
         return (this.y == point.y);
     }
+
+    to_string(){
+        return `x: ${this.x} y: ${this.y}`;
+    }
 }
 
 class MDMath {
