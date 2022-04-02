@@ -3,7 +3,7 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/3/12
+///---- 2022/4/2
 
 class MDPoint {
     constructor(x, y){
