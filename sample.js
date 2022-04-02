@@ -267,27 +267,27 @@ class Dungeon_Mask {
     display(dungeon, player_position) {
         console.log("Mask.display");
 
-        let positon = new MDPoint(-1, -1);
-        for (positon.y = 1; positon.y < this._height - 1; positon.y += 1) {
-            for (positon.x = 1; positon.x < this._width - 1; positon.x += 1) {
+        let position = new MDPoint(-1, -1);
+        for (position.y = 1; position.y < this._height - 1; position.y += 1) {
+            for (position.x = 1; position.x < this._width - 1; position.x += 1) {
                 
-                let mask_value = this.mask.get_value(positon);
+                let mask_value = this.mask.get_value(position);
                 if (mask_value == this._sight_info.Black.Type) {
                     // 見たことのない場所
-                    this._draw_tile(positon, this._sight_info.Black.Type);
+                    this._draw_tile(position, this._sight_info.Black.Type);
                 }
                 else if(mask_value == this._sight_info.Gray.Type){
                     // 一度見たことのある場所
-                    let dungeon_value = dungeon.map.get_value(positon);
+                    let dungeon_value = dungeon.map.get_value(position);
                     if (dungeon_value == world.tile_info.Treasure.Type) {//???? != treasure?
-                        this._draw_tile(positon, this._sight_info.Gray.Type);
+                        this._draw_tile(position, this._sight_info.Gray.Type);
                     }else if(dungeon_value == world.tile_info.Air.Type) {
-                        this._draw_tile(positon, this._sight_info.Gray.Type);
+                        this._draw_tile(position, this._sight_info.Gray.Type);
                     }
                 }
                 else if(mask_value == this._sight_info.Transparent.Type){
                     // 視界がクリアな場所
-                    // if (this._is_in_sight(positon, player_position, -1)) {
+                    // if (this._is_in_sight(position, player_position, -1)) {
                     //     continue;
                     // }
                 }else{
@@ -552,10 +552,10 @@ class Dungeon {
     _create_treasure_white_list() {
         // 岩盤を避けるため1, 1から
         const bedrockOffset = 1;
-        let positon = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
-        for (; positon.y < this._height - bedrockOffset; positon.y++) {
-            for (; positon.x < this._width - bedrockOffset; positon.x++) {
-                let index = this.map.convert_2dTo1d(positon);
+        let position = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
+        for (; position.y < this._height - bedrockOffset; position.y++) {
+            for (; position.x < this._width - bedrockOffset; position.x++) {
+                let index = this.map.convert_2dTo1d(position);
                 this._treasure_white_list.push(index);
             }
         }
@@ -579,10 +579,10 @@ class Dungeon {
     // 敵が重ならないように
     _create_enemy_white_list() {
         const bedrockOffset = 1;
-        let positon = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
-        for (; positon.y < this._height - bedrockOffset; positon.y++) {
-            for (; positon.x < this._width - bedrockOffset; positon.x++) {
-                let index = this.map.convert_2dTo1d(positon);
+        let position = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
+        for (; position.y < this._height - bedrockOffset; position.y++) {
+            for (; position.x < this._width - bedrockOffset; position.x++) {
+                let index = this.map.convert_2dTo1d(position);
                 this._enemy_white_list.push(index);
             }
         }
