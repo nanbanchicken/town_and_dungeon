@@ -543,9 +543,9 @@ class Dungeon {
         let left_x = this._get_random_range(1, (this._width - 1) - (room_width - 1));
         let upper_y = this._get_random_range(1, (this._height - 1) - (room_height - 1));
 
-        let position = new MDPoint(left_x, upper_y);
-        for ( ; position.y < upper_y + room_height; position.y++) {
-            for ( ; position.x < left_x + room_width; position.x++) {
+        let position = new MDPoint(0, 0);
+        for (position.y = upper_y ; position.y < upper_y + room_height; position.y++) {
+            for (position.x = left_x ; position.x < left_x + room_width; position.x++) {
                 this.dig_wall(position);
             }
         }
@@ -563,9 +563,9 @@ class Dungeon {
     _create_treasure_white_list() {
         // 岩盤を避けるため1, 1から
         const bedrockOffset = 1;
-        let position = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
-        for (; position.y < this._height - bedrockOffset; position.y++) {
-            for (; position.x < this._width - bedrockOffset; position.x++) {
+        let position = new MDPoint(0, 0);
+        for (position.y = 0 + bedrockOffset; position.y < this._height - bedrockOffset; position.y++) {
+            for (position.x = 0 + bedrockOffset; position.x < this._width - bedrockOffset; position.x++) {
                 let index = this.map.convert_2dTo1d(position);
                 this._treasure_white_list.push(index);
             }
@@ -590,9 +590,9 @@ class Dungeon {
     // 敵が重ならないように
     _create_enemy_white_list() {
         const bedrockOffset = 1;
-        let position = new MDPoint(0 + bedrockOffset, 0 + bedrockOffset);
-        for (; position.y < this._height - bedrockOffset; position.y++) {
-            for (; position.x < this._width - bedrockOffset; position.x++) {
+        let position = new MDPoint(0, 0);
+        for (position.y = 0 + bedrockOffset; position.y < this._height - bedrockOffset; position.y++) {
+            for (position.x = 0 + bedrockOffset; position.x < this._width - bedrockOffset; position.x++) {
                 let index = this.map.convert_2dTo1d(position);
                 this._enemy_white_list.push(index);
             }
