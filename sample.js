@@ -1018,7 +1018,7 @@ class Enemy extends MDObject {
         // ランダム位置に配置(岩盤以外)
         let index = this._dungeon.get_random_enemy_index();
         // TODO: x, yをまとめる
-        this.position = new MDPoint(this._dungeon.map.convert_1dTo2d_x(index), this._dungeon.map.convert_1dTo2d_y(index))
+        this._position = new MDPoint(this._dungeon.map.convert_1dTo2d_x(index), this._dungeon.map.convert_1dTo2d_y(index))
     }
     
     attack() {
