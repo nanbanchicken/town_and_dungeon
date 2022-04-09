@@ -1219,7 +1219,7 @@ class MagicAnimationData{
     }
 
     // position: MDPoint
-    push(postion){
+    push(position){
         this.route.push(position);
     }
 
@@ -1482,7 +1482,9 @@ function keyPressed() {
     } else if (key == 'd') { //down
         player_direction = new MDPoint(1, 0);
     }
-    my_player.move(player_direction);
+    if(player_direction != null){
+        my_player.move(player_direction);
+    }
 
     // 魔法のテストったらテスト
     let animation_data = null;
