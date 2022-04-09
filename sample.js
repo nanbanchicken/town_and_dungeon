@@ -26,6 +26,10 @@ class MDPoint {
         this.y = y;
     }
 
+    copy(){
+        return new MDPoint(this.x, this.y);
+    }
+
     equal(point){
         return (this.equal_x(point) && this.equal_y(point));
     }
@@ -1245,14 +1249,14 @@ class Stone{
     // leftDistance にバグあり。１つ遠くまで飛ぶよ。
     // 2022/1/22 なおったよ！(置くのをあとにしたよ)
     // （元execute) 魔法石の飛ぶルート/magic_animatiion_dataを返す
-    // position: MDPoint
-    // direction: MDPoint
+    // position: MDPoint 石の初期位置
+    // direction: MDPoint 石の飛ぶ方向
     calc_route(dungeon, position, direction){
         let magic_animation_data = new MagicAnimationData(this.property, 300);
 
         console.log('Stone.calc_route : ')
-        this.position = position;
-        this.direction = direction;
+        this.position = position.copy(); //石をプレイヤ位置を分離して生成
+        this.direction = direction.copy();
         let watchDogCount = 0; // 進んだ距離 反射がループしているか監視
 
         while (this.leftDistance >= 0) {
