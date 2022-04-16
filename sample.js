@@ -139,10 +139,11 @@ class SightPattern{
               // 0 1 2 [3] 4 5 6
             // 奇数
             let mid_index = (sight_size + 1) / 2 - 1;
-            for(let x = 0; x < sight_size; x++){
-                for(let y = 0; y < sight_size; y++){
-                    if(Math.abs(x - mid_index) + Math.abs(y - mid_index) <= mid_index){
-                        pattern.update(x, y, 1);
+            let position = new MDPoint(0, 0);
+            for(position.x = 0; position.x < sight_size; position.x += 1){
+                for(position.y = 0; position.y < sight_size; position.y += 1){
+                    if(Math.abs(position.x - mid_index) + Math.abs(position.y - mid_index) <= mid_index){
+                        pattern.update(position, 1);
                     }
                 }
             }
@@ -181,7 +182,7 @@ class SightPattern{
                   (0 < dungeon_abs.x && dungeon_abs.x < this._width - 1) &&
                   (0 < dungeon_abs.y && dungeon_abs.y < this._height - 1))
                   {
-                    result.push(new MDPoint(pattern_x, pattern_y));
+                    result.push(new MDPoint(position.x, position.y));
                   }
             }
         }
@@ -201,7 +202,7 @@ class MDMap { // [M]achi to [D]ungen no [Map]
         //     Black: { Type: 0, Color: 'rgb(0,0,0)' },
         //     Gray: { Type: 1, Color: 'rgb(150,150,150)' }
         // };
-
+        
         // タイルタイプ(int)を保持
         this.map = [];
         
@@ -404,8 +405,8 @@ class Dungeon {
 
     _init() { 
         // 最初は全部壁で埋める
-        // this.map = new MDMap(this._width, this._height, world.tile_info.Wall.Type);
-        this.map = new MDMap(this._width, this._height, world.tile_info.Air.Type);
+        this.map = new MDMap(this._width, this._height, world.tile_info.Wall.Type);
+        // this.map = new MDMap(this._width, this._height, world.tile_info.Air.Type);
 
         // 岩盤で周囲を囲む
         let position = new MDPoint(0 ,0);
@@ -1542,7 +1543,7 @@ function display_all() {
     // my_player.display();
     
     // マスクの描画
-    // my_dungeon.display_mask(my_player._position_x, my_player._position_y);
+    my_dungeon.display_mask(my_player._position);
  
     my_player.display();
 
