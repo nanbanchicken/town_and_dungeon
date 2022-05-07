@@ -73,6 +73,15 @@ class MDMath {
     }
 }
 
+class MDUtility {
+    // 2 つの値の間のランダムな整数を得る min以上、max未満
+    static get_random_range(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min) + min);
+    }
+}
+
 function mdMathTest(){
     let right = new MDPoint(1, 0);
     let down = new MDPoint(0, 1);
@@ -536,8 +545,8 @@ class Dungeon {
         console.log("_make_room");
 
         for (let count = 0; count < room_count; count++) {
-            let w = this._get_random_range(this._room_config.min_width, this._room_config.max_width + 1);
-            let h = this._get_random_range(this._room_config.min_height, this._room_config.max_height + 1);
+            let w = MDUtility.get_random_range(this._room_config.min_width, this._room_config.max_width + 1);
+            let h = MDUtility.get_random_range(this._room_config.min_height, this._room_config.max_height + 1);
             
             this._make_one_room(w, h);
         }
@@ -547,8 +556,8 @@ class Dungeon {
         console.log("_make_one_room");
 
         // 作る部屋の左上 upperlfet の座標(周囲の岩盤を考慮)
-        let left_x = this._get_random_range(1, (this._width - 1) - (room_width - 1));
-        let upper_y = this._get_random_range(1, (this._height - 1) - (room_height - 1));
+        let left_x = MDUtility.get_random_range(1, (this._width - 1) - (room_width - 1));
+        let upper_y = MDUtility.get_random_range(1, (this._height - 1) - (room_height - 1));
 
         let position = new MDPoint(0, 0);
         for (position.y = upper_y ; position.y < upper_y + room_height; position.y++) {
@@ -614,14 +623,6 @@ class Dungeon {
     }
 
     /* その他 */
-
-    // 2 つの値の間のランダムな整数を得る min以上、max未満
-    _get_random_range(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min) + min);
-    }
-
     // mapのx, yの位置を岩盤で埋める
     // position: MDPoint
     fill_bedrock(position) {
@@ -650,8 +651,8 @@ class Dungeon {
     // 岩盤以外のランダムな座標を取得
     get_random_index() {
         // 岩盤以外の座標
-        let position = new MDPoint(this._get_random_range(1, (this._width - 1)), 
-                                    this._get_random_range(1, (this._height - 1)));
+        let position = new MDPoint(MDUtility.get_random_range(1, (this._width - 1)), 
+                                    MDUtility.get_random_range(1, (this._height - 1)));
 
         let index = this.map.convert_2dTo1d(position);
         return index;
@@ -659,7 +660,7 @@ class Dungeon {
 
     // 宝箱の座標をランダムに取得(被りなし)
     get_random_treasure_index() {
-        let white_list_index = this._get_random_range(0, this._treasure_white_list.length);
+        let white_list_index = MDUtility.get_random_range(0, this._treasure_white_list.length);
         let map_index = this._treasure_white_list[white_list_index];
         // 使用済みの要素を削除
         this._treasure_white_list.splice(white_list_index, 1);
@@ -669,7 +670,7 @@ class Dungeon {
 
     // 敵の座標をランダムに取得(被りなし)
     get_random_enemy_index() {
-        let white_list_index = this._get_random_range(0, this._enemy_white_list.length);
+        let white_list_index = MDUtility.get_random_range(0, this._enemy_white_list.length);
         let map_index = this._enemy_white_list[white_list_index];
         // 使用済みの要素を削除
         this._enemy_white_list.splice(white_list_index, 1);
