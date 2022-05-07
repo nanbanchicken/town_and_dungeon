@@ -374,7 +374,7 @@ class World {
         Wall: { Type: 1, Color: 'rgb(100,100,100)' }, // 壁
         Player: { Type: 2, Color: 'rgb(255,0,0)' }, // プレイヤー
         Treasure: { Type: 3, Color: 'rgb(0,255,0)'}, // 宝箱
-        Enemy: { Type: 4, Color: 'rgb(192,149,103)'}, // 敵
+        Enemy: { Type: 4, Color: 'rgb(255,140,103)'}, // 敵
         // 魔法の石
         R: { Type: 100, Color: 'rgb(255,125,125)'}, // 右魔法石 薄い赤
         L: { Type: 101, Color: 'rgb(125,125,255)'}, // 左魔法石 薄い青
@@ -522,9 +522,16 @@ class Dungeon {
 
     // position: MDPoint
     _draw_tile(position, tile_type) {
+        // 色
         let color = this._get_tile_color(tile_type);
+        if (tile_type == world.tile_info.Enemy.Type){
+            let enemy = this._enemyList.get_enemy(position);
+            let alpha = enemy.hp * 0.1;
+            color = `rgba(255, 140, 103, ${alpha})`;
+        }
         fill(color);
 
+        // 形
         if (tile_type == world.tile_info.Player.Type) {
             ellipseMode(CENTER);
             let offset = 20 / 2;
@@ -1014,7 +1021,7 @@ class Enemy extends MDObject {
         super(my_dungeon, null);
         // 種族とかでhpとか制御したい
         // hp以外の属性も欲しい(火属性に弱いとか)
-        this._hp = 5;
+        this._hp = MDUtility.get_random_range(1, 10);
         this._position = new MDPoint(0, 0);
 
         this._make();
@@ -1027,6 +1034,14 @@ class Enemy extends MDObject {
         let index = this._dungeon.get_random_enemy_index();
         // TODO: x, yをまとめる
         this._position = new MDPoint(this._dungeon.map.convert_1dTo2d_x(index), this._dungeon.map.convert_1dTo2d_y(index))
+    }
+
+    get hp(){
+        return this._hp;
+    }
+
+    get position(){
+        return this._position;
     }
     
     attack() {
@@ -1453,7 +1468,7 @@ function setup(){
     canvasSize=windowHeight;
 
     createCanvas(canvasSize, canvasSize);
-    background(50, 100, 150);
+    background(255, 255, 255);
 
     room_config = new Room_Config(2, 2, 4, 4);
     
@@ -1536,6 +1551,7 @@ function keyPressed() {
 }
 
 function display_all() {
+    background(255, 255, 255);
     my_dungeon.display();
     // my_objects.display_objects();
     // my_enemy.display_enemy();
@@ -1546,7 +1562,7 @@ function display_all() {
     // my_player.display();
     
     // マスクの描画
-    my_dungeon.display_mask(my_player._position);
+    // my_dungeon.display_mask(my_player._position);
  
     my_player.display();
 
