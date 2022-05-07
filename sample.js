@@ -517,8 +517,10 @@ class Dungeon {
         fill(color);
 
         if (tile_type == world.tile_info.Player.Type) {
-            ellipseMode(CORNER);
-            ellipse(position.x * 20, position.y * 20, 20, 20);
+            ellipseMode(CENTER);
+            let offset = 20 / 2;
+            let center = new MDPoint(position.x * 20 + offset, position.y * 20 + offset);
+            ellipse(center.x, center.y, 15, 15);
         }  else {
             rect(position.x * 20, position.y * 20, 20, 20);
         }
