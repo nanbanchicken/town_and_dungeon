@@ -725,8 +725,8 @@ class Dungeon {
     }
 
     // position: MDPoint
-    attacked_enemy(position) {
-        return this._enemyList.attacked_enemy(position);
+    attacked_enemy(position, damage) {
+        return this._enemyList.attacked_enemy(position, damage);
     }
 
 }
@@ -816,6 +816,7 @@ class Player {
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
         this._hp = 10;
+        this._strength = 1; // damage to enemy
         this._position = new MDPoint(0, 0);
         this._sight_size = 5;
 
@@ -856,7 +857,7 @@ class Player {
             // 敵がいるか
             let is_exist_enemy = this._dungeon.is_exist_enemy(next);
             if(is_exist_enemy){
-                let enemy = this._dungeon.attacked_enemy(next);
+                let enemy = this._dungeon.attacked_enemy(next, this._strength);
                 if(!enemy.is_alive()){
                     this._stats.add_kill_enemy();
                 }
@@ -888,7 +889,7 @@ class Player {
     // ダメージを与える場合は -1 (<0)
     // 回復させる場合は +value (>0)
     update_hp(damage){
-        this._hp += damage;
+        this._hp -= damage;
         return this;
     }
 }
@@ -1051,7 +1052,7 @@ class Enemy extends MDObject {
     attacked(damage) {
         console.log("enemy.attacked");
 
-        this._hp += damage;
+        this._hp -= damage;
         if (!this.is_alive()){
             // マップ外に移動させる
             this._position.set(-1, -1);
@@ -1512,7 +1513,7 @@ function keyPressed() {
     // 魔法のテストったらテスト
     let animation_data = null;
     let stone = null;
-    let stone_damage = -3;
+    let stone_damage = 3; // hp -= damage
     let stone_direction = new MDPoint(1, 0); // (1,0)はテスト用
     if (key == 'r'){
         // 右石
