@@ -3,8 +3,6 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
-///---- 2022/4/2
-
 class MDPoint {
     constructor(x, y){
         this.x = x;
@@ -70,6 +68,145 @@ class MDMath {
         let newX = matrix[0][0] * vector.x + matrix[0][1] * vector.y;
         let newY = matrix[1][0] * vector.x + matrix[1][1] * vector.y;
         return new MDPoint(newX, newY);
+    }
+}
+
+// 武器
+// attack: double
+// durability: int
+// attribute: enumで入れたい(無属性、炎属性...)
+class MDItemWeapon {
+    constructor(attack, durability, attribute){
+        this.attack = attack;
+        this.durability = durability;
+        this.attribute = attribute;
+    }
+}
+
+// 将来的にStoneクラスの名前をMDItemStoneに変更する
+class MDItemStone {
+    constructor(property, cost, damage, maxDistance){
+        this.property = property; // R, L, B(tile_info)
+        this.cost = cost; // 実行コスト
+        this.damage = damage;
+        this.maxDistance = maxDistance; // 飛行距離
+
+        this.leftDistance = maxDistance; // 残りの距離
+        this.position = new MDPoint(0, 0);
+        this.direction = new MDPoint(0, 0);
+    }
+
+    // 2021/12/18 うごいた！
+    // leftDistance にバグあり。１つ遠くまで飛ぶよ。
+    // 2022/1/22 なおったよ！(置くのをあとにしたよ)
+    // （元execute) 魔法石の飛ぶルート/magic_animatiion_dataを返す
+    // position: MDPoint 石の初期位置
+    // direction: MDPoint 石の飛ぶ方向
+    calc_route(dungeon, position, direction){
+        let magic_animation_data = new MagicAnimationData(this.property, 300);
+
+        console.log('Stone.calc_route : ')
+        this.position = position.copy(); //石をプレイヤ位置を分離して生成
+        this.direction = direction.copy();
+        let watchDogCount = 0; // 進んだ距離 反射がループしているか監視
+
+        while (this.leftDistance >= 0) {
+            let next = this.position.add(this.direction);
+    
+            let nextTile = dungeon.get_value(next);
+            console.log(`反射ありの経路計算 次のタイル: ${nextTile}`);
+            switch (nextTile) {
+                case world.tile_info.Air.Type:
+                    this.leftDistance -= 1;
+                    this.position.set(next.x, next.y);
+                    magic_animation_data.push(next);
+                    watchDogCount = 0;
+                    console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
+                    break;
+                case world.tile_info.Bedrock.Type:
+                case world.tile_info.Wall.Type:
+                case world.tile_info.R.Type:
+                case world.tile_info.B.Type:
+                case world.tile_info.Enemy.Type:
+                case world.tile_info.Treasure.Type:
+                    // 将来的に破壊石はマップに配置されない
+                    // 固定の方向= 右に曲げてやる
+                    let newDirection = my_mdMath.rotateRight(this.direction);
+                    this.direction = newDirection;
+                    watchDogCount+=1;
+                    if(this.IsRefrectLoop(watchDogCount)){
+                        console.log("石の反射が無限ループ");
+                        return;
+                    }
+                    break;
+                case world.tile_info.L.Type:
+                    // 左に曲げる
+                    this.direction = my_mdMath.rotateLeft(this.direction);
+                    watchDogCount+=1;
+                    if(this.IsRefrectLoop(watchDogCount)){
+                        console.log("石の反射が無限ループ");
+                        return;
+                    }
+                    break;
+                case world.tile_info.Player.Type:
+                    // ブレイクさせる
+                    break;
+                default:
+                    console.log('Stone::calc_route 次タイルの判定に失敗しました。');
+                    break;
+            }
+        }
+
+        if(this.property == world.tile_info.B.Type)
+        {
+            let nextTile = null;
+            while(true){
+                // 破壊石 直線で何かに当たるまで経路計算
+                let next = this.position.add(this.direction);
+                nextTile = dungeon.get_value(next);
+                console.log(`反射"なし"の経路計算 次のタイル: ${nextTile}`);
+                
+                this.position.set(next.x, next.y);
+                magic_animation_data.push(next);
+                
+                // Air, Treasure はスルー、それ以外衝突
+                // magic_animation_data の最後は、当たった相手の座標
+                if (![world.tile_info.Air.Type, world.tile_info.Treasure.Type].includes(nextTile)){
+                    console.log(`破壊石が衝突 Pos:${JSON.stringify(this.position)}`);
+                    break;
+                }
+                console.log(`破壊石を進める Pos:${JSON.stringify(this.position)}`);
+            }
+        }
+
+        return magic_animation_data;
+    }
+
+    // 反射がループしているか
+    IsRefrectLoop(dogCount){
+        let limit = 4;
+        return dogCount > limit;
+    }
+}
+
+// とりあえず消耗品
+class MDItemMisc { // miscellaneous
+    constructor(hoge, durability){
+        this.hoge = hoge;
+        this.durability = durability; // 持続時間的ななにか
+    }
+}
+
+// プレイヤーやダンジョンに登場するアイテムを扱う
+// name: str
+// rarity: enum
+// item: MDItemWeapon, MDItemStone, MDItemMisc
+class MDItem {
+    constructor(name, rarity, item){
+        this.name = name;
+        this.rarity = rarity;
+        this.item = item;
+        this.type = null;
     }
 }
 
@@ -1253,111 +1390,6 @@ class MagicAnimationData{
     }
 }
 
-class Stone{
-    constructor(property, cost, damage, maxDistance){
-        this.property = property; // R, L, B(tile_info)
-        this.cost = cost; // 実行コスト
-        this.damage = damage;
-        this.maxDistance = maxDistance; // 飛行距離
-
-        this.leftDistance = maxDistance; // 残りの距離
-        this.position = new MDPoint(0, 0);
-        this.direction = new MDPoint(0, 0);
-    }
-
-    // 2021/12/18 うごいた！
-    // leftDistance にバグあり。１つ遠くまで飛ぶよ。
-    // 2022/1/22 なおったよ！(置くのをあとにしたよ)
-    // （元execute) 魔法石の飛ぶルート/magic_animatiion_dataを返す
-    // position: MDPoint 石の初期位置
-    // direction: MDPoint 石の飛ぶ方向
-    calc_route(dungeon, position, direction){
-        let magic_animation_data = new MagicAnimationData(this.property, 300);
-
-        console.log('Stone.calc_route : ')
-        this.position = position.copy(); //石をプレイヤ位置を分離して生成
-        this.direction = direction.copy();
-        let watchDogCount = 0; // 進んだ距離 反射がループしているか監視
-
-        while (this.leftDistance >= 0) {
-            let next = this.position.add(this.direction);
-    
-            let nextTile = dungeon.get_value(next);
-            console.log(`反射ありの経路計算 次のタイル: ${nextTile}`);
-            switch (nextTile) {
-                case world.tile_info.Air.Type:
-                    this.leftDistance -= 1;
-                    this.position.set(next.x, next.y);
-                    magic_animation_data.push(next);
-                    watchDogCount = 0;
-                    console.log(`石を進める Pos:${JSON.stringify(this.position)} LeftDist: ${this.leftDistance}`);
-                    break;
-                case world.tile_info.Bedrock.Type:
-                case world.tile_info.Wall.Type:
-                case world.tile_info.R.Type:
-                case world.tile_info.B.Type:
-                case world.tile_info.Enemy.Type:
-                case world.tile_info.Treasure.Type:
-                    // 将来的に破壊石はマップに配置されない
-                    // 固定の方向= 右に曲げてやる
-                    let newDirection = my_mdMath.rotateRight(this.direction);
-                    this.direction = newDirection;
-                    watchDogCount+=1;
-                    if(this.IsRefrectLoop(watchDogCount)){
-                        console.log("石の反射が無限ループ");
-                        return;
-                    }
-                    break;
-                case world.tile_info.L.Type:
-                    // 左に曲げる
-                    this.direction = my_mdMath.rotateLeft(this.direction);
-                    watchDogCount+=1;
-                    if(this.IsRefrectLoop(watchDogCount)){
-                        console.log("石の反射が無限ループ");
-                        return;
-                    }
-                    break;
-                case world.tile_info.Player.Type:
-                    // ブレイクさせる
-                    break;
-                default:
-                    console.log('Stone::calc_route 次タイルの判定に失敗しました。');
-                    break;
-            }
-        }
-
-        if(this.property == world.tile_info.B.Type)
-        {
-            let nextTile = null;
-            while(true){
-                // 破壊石 直線で何かに当たるまで経路計算
-                let next = this.position.add(this.direction);
-                nextTile = dungeon.get_value(next);
-                console.log(`反射"なし"の経路計算 次のタイル: ${nextTile}`);
-                
-                this.position.set(next.x, next.y);
-                magic_animation_data.push(next);
-                
-                // Air, Treasure はスルー、それ以外衝突
-                // magic_animation_data の最後は、当たった相手の座標
-                if (![world.tile_info.Air.Type, world.tile_info.Treasure.Type].includes(nextTile)){
-                    console.log(`破壊石が衝突 Pos:${JSON.stringify(this.position)}`);
-                    break;
-                }
-                console.log(`破壊石を進める Pos:${JSON.stringify(this.position)}`);
-            }
-        }
-
-        return magic_animation_data;
-    }
-
-    // 反射がループしているか
-    IsRefrectLoop(dogCount){
-        let limit = 4;
-        return dogCount > limit;
-    }
-}
-
 class Magic{
     constructor(player, dungeon, maxLength){
         this._player = player;
@@ -1517,17 +1549,17 @@ function keyPressed() {
     let stone_direction = new MDPoint(1, 0); // (1,0)はテスト用
     if (key == 'r'){
         // 右石
-        stone = new Stone(world.tile_info.R.Type, 0, stone_damage, stone_distance);
+        stone = new MDItemStone(world.tile_info.R.Type, 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, my_player._position, stone_direction);
         console.log('Migi uchi!');
     }else if(key == 'l'){
         // 左石
-        stone = new Stone(world.tile_info.L.Type, 0, stone_damage, stone_distance);
+        stone = new MDItemStone(world.tile_info.L.Type, 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, my_player._position, stone_direction);
         console.log('Left uchi!');
     }else if(key == 'b'){
         // 攻撃石
-        stone = new Stone(world.tile_info.B.Type, 0, stone_damage, stone_distance);
+        stone = new MDItemStone(world.tile_info.B.Type, 0, stone_damage, stone_distance);
         animation_data = stone.calc_route(my_dungeon, my_player._position, stone_direction);
         console.log('Break uchi!');
     }else if(!isNaN(key) && key != ' '){
