@@ -206,9 +206,63 @@ class MDItem {
         this.name = name;
         this.rarity = rarity;
         this.item = item;
-        this.type = null;
+        this.type = typeof item;
     }
 }
+
+// size: int インベントリサイズ
+// items: null | array[MDItem] インベントリに入れておきたいアイテム
+class MDInventory {
+    constructor(size, items) {
+        this.inventory = new Array(size).fill(null);
+        if(item != null){ this.addRange(items); }
+    }
+
+    // item: MDItem
+    // return: bool 追加に成功したか
+    add(item){
+        let null_index = this.inventory.indexOf(null);
+        if(null_index == -1){ return false; }
+
+        this.inventory[null_index] = item;
+        return true;
+    }
+
+    // null, MDItem1, MDItem2, null, null
+    // 新しいアイテムが入ってきたら
+    // MDItem3, MDItem1, MDItem2, null, null
+    // ちょっと気になるアイテムがあるから目立つ位置に移動させる（ユーザが手動で
+    // null, MDItem1, MDItem2, null, MDItem3
+    // あ、アイテムがいっぱいだ！要らないアイテムは何？
+    // MDItem1, MDItem2, MDItem3, null, null
+
+    // items: array[MDItem]
+    // return: array[MDItem] 追加できなかったアイテム
+    addRange(items){
+        failds = [];
+        items.forEach(item => {
+            let isSuccess = this.add(item);
+            if(!isSuccess){ failds.push(item); }
+        });
+
+        return failds;
+    }
+    
+    // item: MDItem
+    // count: int
+    out(item, count){
+
+    }
+
+}
+
+// item1 = new MDItem("ring1", "5", new MDItemWeapon(...));
+
+// foreach item itemcontainer{
+//    if(item.type == "yakuso"){
+//        player.drink(item2);
+//    }
+// }
 
 class MDUtility {
     // 2 つの値の間のランダムな整数を得る min以上、max未満
