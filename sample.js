@@ -3,6 +3,28 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
+class World {
+
+    tile_info = {
+        Bedrock: {Type: -1, Color: 'rgb(0,0,0)'}, // 岩盤
+        Air: { Type: 0, Color: 'rgb(255,255,255)' }, // 空間
+        Wall: { Type: 1, Color: 'rgb(100,100,100)' }, // 壁
+        Player: { Type: 2, Color: 'rgb(255,0,0)' }, // プレイヤー
+        Treasure: { Type: 3, Color: 'rgb(0,255,0)'}, // 宝箱
+        Enemy: { Type: 4, Color: 'rgb(255,140,103)'}, // 敵
+        // 魔法の石
+        R: { Type: 100, Color: 'rgb(255,125,125)'}, // 右魔法石 薄い赤
+        L: { Type: 101, Color: 'rgb(125,125,255)'}, // 左魔法石 薄い青
+        B: { Type: 102, Color: 'rgb(125,0,125)'},   // 破壊石　紫
+        C: { Type: 103, Color: 'rgb(255,255,0)'},   // 回復石 黄
+    };
+
+}
+// world.tile_info
+// world.tile_info['B'].Type
+// world.tile_info.B.Type
+let world = new World();
+
 class MDPoint {
     constructor(x, y){
         this.x = x;
@@ -85,6 +107,13 @@ class MDItemWeapon {
 
 // 将来的にStoneクラスの名前をMDItemStoneに変更する
 class MDItemStone {
+    /**
+     * 魔法石を初期化
+     * @param {tile_info} property 石の属性 ex. world.tile_info.R.Type
+     * @param {int} cost 実行コスト
+     * @param {int} damage 攻撃力(回復の場合は負の値)
+     * @param {int} maxDistance 石の飛距離
+     */
     constructor(property, cost, damage, maxDistance){
         this.property = property; // R, L, B(tile_info)
         this.cost = cost; // 実行コスト
@@ -215,7 +244,7 @@ class MDItem {
 class MDInventory {
     constructor(size, items) {
         this.inventory = new Array(size).fill(null);
-        if(item != null){ this.addRange(items); }
+        if(items != null){ this.addRange(items); }
     }
 
     // item: MDItem
@@ -239,7 +268,9 @@ class MDInventory {
     // items: array[MDItem]
     // return: array[MDItem] 追加できなかったアイテム
     addRange(items){
-        failds = [];
+        let failds = [];
+        if(items == null){ return []; }
+
         items.forEach(item => {
             let isSuccess = this.add(item);
             if(!isSuccess){ failds.push(item); }
@@ -557,27 +588,6 @@ class Dungeon_Mask {
     }
 }
 
-class World {
-
-    tile_info = {
-        Bedrock: {Type: -1, Color: 'rgb(0,0,0)'}, // 岩盤
-        Air: { Type: 0, Color: 'rgb(255,255,255)' }, // 空間
-        Wall: { Type: 1, Color: 'rgb(100,100,100)' }, // 壁
-        Player: { Type: 2, Color: 'rgb(255,0,0)' }, // プレイヤー
-        Treasure: { Type: 3, Color: 'rgb(0,255,0)'}, // 宝箱
-        Enemy: { Type: 4, Color: 'rgb(255,140,103)'}, // 敵
-        // 魔法の石
-        R: { Type: 100, Color: 'rgb(255,125,125)'}, // 右魔法石 薄い赤
-        L: { Type: 101, Color: 'rgb(125,125,255)'}, // 左魔法石 薄い青
-        B: { Type: 102, Color: 'rgb(125,0,125)'},   // 破壊石　紫
-        C: { Type: 103, Color: 'rgb(255,255,0)'},   // 回復石 黄
-    };
-
-}
-// world.tile_info
-// world.tile_info['B'].Type
-// world.tile_info.B.Type
-let world = new World();
 
 class Dungeon { 
 
@@ -1133,6 +1143,7 @@ class Treasure extends MDObject{
         super(my_dungeon, null);
 
         this._position = new MDPoint(0, 0);
+        this._inventroy = new MDInventory(5, null);
 
         this._opened = false;
         this._make();
@@ -1160,6 +1171,10 @@ class Treasure extends MDObject{
 
         this._dungeon.display_treasure(this._position);
     }
+
+    addInventory(items){
+        this._inventroy.addRange(items);
+    }
 }
 
 class TreasureList extends MDObjectList{
@@ -1171,8 +1186,31 @@ class TreasureList extends MDObjectList{
 
     _make(){
         for (let i = 0; i < this._count; i++) {
-            this._object_list.push(new Treasure(this._dungeon));
+            let treasure = new Treasure(this._dungeon);
+            treasure.addInventory(this._getRandomItems(1));
+            this._object_list.push(treasure);
         }
+    }
+
+    // num : int : number of items
+    _getRandomItems(num){
+        let array = [];
+        for(let i = 0; i < num; i++){
+            array.push(this._create_item_stone() );
+        }
+        return array;
+    }
+
+    // return MDStoneItem
+    _create_item_stone(){
+        let a = new MDItemStone(world.tile_info.R.Type, 0, 0, 5); //富豪プログラミング 
+        return a;
+    }
+
+    _create_weapon(){
+        // この辺はあとで他クラスに移動する
+        // アイテムテーブルとかほしい
+        return new MDItemWeapon(3, 5, "Fire");
     }
 
     // position: MDPoint
