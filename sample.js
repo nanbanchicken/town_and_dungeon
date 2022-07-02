@@ -247,6 +247,11 @@ class MDInventory {
         if(items != null){ this.add_range(items); }
     }
 
+    // インベントリ容量
+    get size(){
+        return this._inventory.length;
+    }
+
     // item: MDItem
     // return: bool 追加に成功したか
     add(item){
@@ -267,6 +272,10 @@ class MDInventory {
 
     // items: array[MDItem]
     // return: array[MDItem] 追加できなかったアイテム
+    // ex.
+    // inventory = [hoge, null, null]
+    // add_inventory([piyo]);
+    // inventory = [hoge, piyo, null]
     add_range(items){
         let failds = [];
         if(items == null){ return []; }
@@ -276,6 +285,19 @@ class MDInventory {
             if(!isSuccess){ failds.push(item); }
         });
 
+        return failds;
+    }
+
+    // 配列を上書き
+    // ex.
+    // inventory = [hoge, null, null]
+    // set_inventory([piyo])
+    // inventory = [piyo, null, null]
+    // set_inventory([piyo, momo])
+    // inventory = [piyo, momo, null]
+    set_range(items){
+        this.inventory = new Array(this.size).fill(null);
+        let failds = this.add_range(items);
         return failds;
     }
     
@@ -1019,6 +1041,7 @@ class Player {
         this._hp = 10;
         this._strength = 1; // damage to enemy
         this._position = new MDPoint(0, 0);
+        this._inventory = new MDInventory(2, null);
         this._sight_size = 5;
 
         this._make();
@@ -1093,9 +1116,15 @@ class Player {
         this._hp -= damage;
         return this;
     }
-    
+
     add_inventory(items){
         this._inventory.add_range(items);
+    }
+
+    set_inventory(items){
+        let failds = this._inventory.set_range(items);
+        // faildsを宝箱とかに返さないといけない
+        // ex. treasure.set_inventory(feilds);
     }
 }
 
