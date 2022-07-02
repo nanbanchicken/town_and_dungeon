@@ -244,7 +244,7 @@ class MDItem {
 class MDInventory {
     constructor(size, items) {
         this.inventory = new Array(size).fill(null);
-        if(items != null){ this.addRange(items); }
+        if(items != null){ this.add_range(items); }
     }
 
     // item: MDItem
@@ -267,7 +267,7 @@ class MDInventory {
 
     // items: array[MDItem]
     // return: array[MDItem] 追加できなかったアイテム
-    addRange(items){
+    add_range(items){
         let failds = [];
         if(items == null){ return []; }
 
@@ -1093,6 +1093,10 @@ class Player {
         this._hp -= damage;
         return this;
     }
+    
+    add_inventory(items){
+        this._inventory.add_range(items);
+    }
 }
 
 class Player_Stats {
@@ -1172,8 +1176,8 @@ class Treasure extends MDObject{
         this._dungeon.display_treasure(this._position);
     }
 
-    addInventory(items){
-        this._inventroy.addRange(items);
+    add_inventory(items){
+        this._inventroy.add_range(items);
     }
 }
 
@@ -1187,13 +1191,13 @@ class TreasureList extends MDObjectList{
     _make(){
         for (let i = 0; i < this._count; i++) {
             let treasure = new Treasure(this._dungeon);
-            treasure.addInventory(this._getRandomItems(1));
+            treasure.add_inventory(this._get_random_items(1));
             this._object_list.push(treasure);
         }
     }
 
     // num : int : number of items
-    _getRandomItems(num){
+    _get_random_items(num){
         let array = [];
         for(let i = 0; i < num; i++){
             array.push(this._create_item_stone() );
