@@ -249,7 +249,7 @@ class MDInventory {
 
     // インベントリ容量
     get size(){
-        return this._inventory.length;
+        return this.inventory.length;
     }
 
     // item: MDItem
@@ -301,10 +301,12 @@ class MDInventory {
         return failds;
     }
     
-    // item: MDItem
-    // count: int
-    out(item, count){
-
+    /**
+     * インベントリ内のアイテムをすべてリストで取得
+     * @return {[MDItem]} アイテム配列
+     */
+    get_items(){
+        return this.inventory;
     }
 
 }
@@ -925,6 +927,16 @@ class Dungeon {
     is_exist_treasure(position) {
         return this._treasureList.is_exist_treasure(position);
     }
+
+    /**
+     * 宝箱を取得
+     * 宝箱なしの場合はnul
+     * @param {MDPoint} position 座標
+     * @return {Treasure} 宝箱
+     */
+    get_treasure(position){
+        return this._treasureList.get_treasure(position);
+    }
     
     // position: MDPoint
     is_opened_treasure(position) {
@@ -1036,6 +1048,10 @@ class MDObjectList{
 
 class Player {
 
+    /**
+     * プレイヤ初期化
+     * @param {Dungeon} my_dungeon ダンジョン
+     */
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
         this._hp = 10;
@@ -1094,15 +1110,7 @@ class Player {
             this._dungeon.update_mask(next, this._sight_size); // 視界サイズ
 
             // 宝箱
-            let is_exist_treasure = this._dungeon.is_exist_treasure(this._position)
-            if (is_exist_treasure) {
-                
-                let is_opened_treasure = this._dungeon.is_opened_treasure(this._position);
-                if (!is_opened_treasure) {
-                    this._dungeon.open_treasure(this._position);
-                    this._stats.add_pickup_treasure();
-                }
-            }
+            this.treasture_handle(); //現在地に宝箱があるか、あれば処理する
         }
     }
 
@@ -1115,6 +1123,42 @@ class Player {
     update_hp(damage){
         this._hp -= damage;
         return this;
+    }
+
+    // 宝箱の操作？
+    treasture_handle(){
+        // let is_exist_treasure = this._dungeon.is_exist_treasure(this._position);
+        let treasure = this._dungeon.get_treasure(this._position);
+        // null だと returnしてくれるはず
+        if (!treasure){return;}
+        this.open_treasure(treasure);
+        this.get_treasure_items(treasure);
+
+    }
+
+    open_treasure(treasure){
+        let is_opened = treasure.is_opened(this._position);
+        if (!is_opened){return;}
+
+        this._dungeon.open_treasure(this._position);
+        this._stats.add_pickup_treasure();
+    }
+
+    /**
+     * 宝箱からアイテムを取得
+     * @param {Treasure} treasure 宝箱
+     */
+    get_treasure_items(treasure){
+        let treasure_items = treasure.get_items();
+        console.info(`宝箱の元のアイテム: ${treasure_items}`);
+        // let is_exist_items = (treasure_items.length == 0);
+        // if (!is_exist_items){return;}
+
+        let fails = this.set_inventory(treasure_items);
+        treasure.set_inventory(fails);
+
+        console.info(`プレイヤのアイテム: ${this._inventory.get_items()}`);
+        console.info(`宝箱の残りのアイテム: ${treasure.get_items()}`);
     }
 
     add_inventory(items){
@@ -1176,7 +1220,7 @@ class Treasure extends MDObject{
         super(my_dungeon, null);
 
         this._position = new MDPoint(0, 0);
-        this._inventroy = new MDInventory(5, null);
+        this._inventory = new MDInventory(5, null);
 
         this._opened = false;
         this._make();
@@ -1197,6 +1241,7 @@ class Treasure extends MDObject{
     
     open() {
         this._opened = true;
+        // player.inventory <- this.inventory
     }
 
     display(){
@@ -1206,7 +1251,25 @@ class Treasure extends MDObject{
     }
 
     add_inventory(items){
-        this._inventroy.add_range(items);
+        this._inventory.add_range(items);
+    }
+
+    /**
+     * インベントリにアイテムを追加
+     * @param {[MDItem]} items アイテム配列
+     * @return {[MDItem]} アイテム配列
+     */
+    set_inventory(items){
+        let fails = this._inventory.set_range(items);
+        return fails;
+    }
+
+    /**
+     * イベントリ内のアイテムをすべて取得
+     * @return {[MDItem]} アイテム配列
+     */
+    get_items(){
+        this._inventory.get_items();
     }
 }
 
