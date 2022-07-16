@@ -254,12 +254,17 @@ class MDInventory {
 
     // item: MDItem
     // return: bool 追加に成功したか
+    // [a,b,null,null] -> null_index = 2
+    // [a,null,b,null] -> null_index = 1
+    // [a,b,c,d] -> null_index == -1 // can't add item
     add(item){
         let null_index = this.inventory.indexOf(null);
-        if(null_index == -1){ return false; }
+        let can_add_item = (null_index > -1);
+        if(can_add_item){
+            this.inventory[null_index] = item;
+        }
 
-        this.inventory[null_index] = item;
-        return true;
+        return can_add_item;
     }
 
     // null, MDItem1, MDItem2, null, null
@@ -280,7 +285,10 @@ class MDInventory {
         let failds = [];
         if(items == null){ return []; }
 
+        // inventory = [hoge1, null, hoge2]の時にhoge2まで処理が進むかチェックすること
         items.forEach(item => {
+            if(item == null){ return; } //へーやるじゃん（じゅんちゃん）
+            
             let isSuccess = this.add(item);
             if(!isSuccess){ failds.push(item); }
         });
@@ -1057,7 +1065,7 @@ class Player {
         this._hp = 10;
         this._strength = 1; // damage to enemy
         this._position = new MDPoint(0, 0);
-        this._inventory = new MDInventory(2, null);
+        this._inventory = new MDInventory(3, null);
         this._sight_size = 5;
 
         this._make();
@@ -1154,21 +1162,31 @@ class Player {
         // let is_exist_items = (treasure_items.length == 0);
         // if (!is_exist_items){return;}
 
-        let fails = this.set_inventory(treasure_items);
-        treasure.set_inventory(fails);
+        let fails = this.add_inventory(treasure_items);
+        treasure.aset_inventory(fails);
 
         console.info(`プレイヤのアイテム: ${this._inventory.get_items()}`);
         console.info(`宝箱の残りのアイテム: ${treasure.get_items()}`);
     }
 
+    /**
+     * インベントリにアイテムを追加
+     * @param {[MDITEM]} items アイテム
+     * @return {[MDITEM]} 入らなかったアイテム
+     */
     add_inventory(items){
-        this._inventory.add_range(items);
+        let failds = this._inventory.add_range(items);
+        return failds;
     }
 
+    /**
+     * インベントリをアイテムで上書き
+     * @param {[MDITEM]} items アイテム
+     * @return {[MDITEM]} 入らなかったアイテム
+     */
     set_inventory(items){
         let failds = this._inventory.set_range(items);
-        // faildsを宝箱とかに返さないといけない
-        // ex. treasure.set_inventory(feilds);
+        return failds;
     }
 }
 
@@ -1269,7 +1287,7 @@ class Treasure extends MDObject{
      * @return {[MDItem]} アイテム配列
      */
     get_items(){
-        this._inventory.get_items();
+        return this._inventory.get_items();
     }
 }
 
@@ -1283,12 +1301,13 @@ class TreasureList extends MDObjectList{
     _make(){
         for (let i = 0; i < this._count; i++) {
             let treasure = new Treasure(this._dungeon);
-            treasure.add_inventory(this._get_random_items(1));
+            treasure.add_inventory(this._get_random_items(2));
             this._object_list.push(treasure);
         }
     }
 
     // num : int : number of items
+    // ランダムといいつついまは石だけだよ
     _get_random_items(num){
         let array = [];
         for(let i = 0; i < num; i++){
