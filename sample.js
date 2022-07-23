@@ -1146,7 +1146,7 @@ class Player {
 
     open_treasure(treasure){
         let is_opened = treasure.is_opened();
-        if (!is_opened){return;}
+        if (is_opened){return;}
 
         this._dungeon.open_treasure(this._position);
         this._stats.add_pickup_treasure();
