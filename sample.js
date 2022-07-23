@@ -1163,7 +1163,7 @@ class Player {
         // if (!is_exist_items){return;}
 
         let fails = this.add_inventory(treasure_items);
-        treasure.aset_inventory(fails);
+        treasure.set_inventory(fails);
 
         console.info(`プレイヤのアイテム: ${this._inventory.get_items()}`);
         console.info(`宝箱の残りのアイテム: ${treasure.get_items()}`);
