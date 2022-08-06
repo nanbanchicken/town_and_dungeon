@@ -1696,7 +1696,9 @@ class Magic{
 
 //------- ------ main 
 
-let canvasSize = 600;
+let dungeon_width = 16;
+let cell_px = 20;
+let canvasSize = dungeon_width * cell_px;
 let my_dungeon;
 let my_player;
 let my_sight_pattern;
@@ -1705,18 +1707,16 @@ let my_mdMath;
 function setup(){
     my_mdMath = new MDMath();
 
-    canvasSize=windowHeight;
-
     createCanvas(canvasSize, canvasSize);
     background(255, 255, 255);
 
     room_config = new Room_Config(2, 2, 4, 4);
     
-    my_dungeon = new Dungeon(16, 16, 5, room_config, 10, 10);
+    my_dungeon = new Dungeon(dungeon_width, dungeon_width, 5, room_config, 10, 10);
 
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
     
-    my_sight_pattern = new SightPattern(16, 16);
+    my_sight_pattern = new SightPattern(dungeon_width, dungeon_width);
     
     display_all();
 
