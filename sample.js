@@ -1696,9 +1696,9 @@ class Magic{
 
 //------- ------ main 
 
-let dungeon_width = 16;
-let cell_px = 20;
-let canvasSize = dungeon_width * cell_px;
+const dungeon_width = 16;
+const cell_px = 20;
+const canvasSize = dungeon_width * cell_px;
 let my_dungeon;
 let my_player;
 let my_sight_pattern;
