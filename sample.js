@@ -1193,13 +1193,61 @@ class Player {
 class Player_Stats {
 
     constructor() {
-        this._text_size = 20;
-        this._text_color = 'rgb(255,126,0)'; // オレンジ
-        
         this._walk = 0;
         this._dig_wall = 0;
         this._pickup_treasures = 0;
         this._kill_enemies = 0;
+        
+        this.init_table_dom();  
+        this.get_table_dom();  
+    }
+
+    init_table_dom(){
+        // TODO: 次回Tableの動的な生成
+        // let hoge = [
+        //     {text: '歩数', id:'player-status-walk'}, 
+        // ]
+        let contents = `
+        <table>
+          <thead>
+          <tr>
+              <th colspan="2">統計</th>
+          </tr>
+          </thead>
+          <tbody>
+            <tr>
+                <td>歩数</td>
+                <td id="player-status-walk">0</td>
+            </tr>
+            <tr>
+                <td>掘った数</td>
+                <td id="player-status-dig-wall">0</td>
+            </tr>
+            <tr>
+                <td>拾った宝箱</td>
+                <td id="player-status-pickup-treasures">0</td>
+            </tr>
+            <tr>
+                <td>倒した敵</td>
+                <td id="player-status-kill-enemies">0</td>
+            </tr>
+            <tr>
+                <td>石の飛距離</td>
+                <td id="player-status-stone-distance">0</td>
+            </tr>
+          </tbody>
+        </table>`;
+
+        let status_div = document.getElementById('status');
+        status_div.insertAdjacentHTML('beforebegin', contents);
+    }
+
+    get_table_dom(){
+        this._walk_element = document.getElementById('player-status-walk');
+        this._dig_wall_element = document.getElementById('player-status-dig-wall');
+        this._pickup_treasures_element = document.getElementById('player-status-pickup-treasures');
+        this._kill_enemies_element = document.getElementById('player-status-kill-enemies');
+        this._stone_distance_walk_element = document.getElementById('player-status-stone-distance');
     }
     
     add_walk() {
@@ -1219,16 +1267,11 @@ class Player_Stats {
     }
     
     display() {
-        textAlign(LEFT, TOP);
-        textSize(this._text_size);
-        fill(this._text_color);
-
-        text("歩数: " + this._walk, 0, 0);
-        text("掘った数: " + this._dig_wall, 0, this._text_size);
-        text("拾った宝箱: " + this._pickup_treasures, 0, this._text_size * 2);
-        text("倒した敵: " + this._kill_enemies, 0, this._text_size * 3);
-        // テスト用に追加
-        text("石の飛距離: " + stone_distance, 0, this._text_size * 4);
+        this._walk_element.textContent = this._walk;
+        this._dig_wall_element.textContent = this._dig_wall;
+        this._pickup_treasures_element.textContent = this._pickup_treasures;
+        this._kill_enemies_element.textContent = this._kill_enemies;
+        this._stone_distance_walk_element.textContent = stone_distance;
     }
 }
 
