@@ -1203,11 +1203,17 @@ class Player_Stats {
     }
 
     init_table_dom(){
-        // TODO: 次回Tableの動的な生成
-        // let hoge = [
-        //     {text: '歩数', id:'player-status-walk'}, 
-        // ]
-        let contents = `
+        const contents = [
+            {text: '歩数', id:'player-status-walk', value: '0'}, 
+            {text: '掘った数', id:'player-status-dig-wall', value: '0'}, 
+            {text: '拾った宝箱', id:'player-status-pickup-treasures', value: '0'}, 
+            {text: '倒した敵', id:'player-status-kill-enemies', value: '0'}, 
+            {text: '石の飛距離', id:'player-status-stone-distance', value: '0'}, 
+        ]
+
+        let body_contents = this.create_table_body_contents(contents);
+
+        let table_element = `
         <table>
           <thead>
           <tr>
@@ -1215,31 +1221,26 @@ class Player_Stats {
           </tr>
           </thead>
           <tbody>
-            <tr>
-                <td>歩数</td>
-                <td id="player-status-walk">0</td>
-            </tr>
-            <tr>
-                <td>掘った数</td>
-                <td id="player-status-dig-wall">0</td>
-            </tr>
-            <tr>
-                <td>拾った宝箱</td>
-                <td id="player-status-pickup-treasures">0</td>
-            </tr>
-            <tr>
-                <td>倒した敵</td>
-                <td id="player-status-kill-enemies">0</td>
-            </tr>
-            <tr>
-                <td>石の飛距離</td>
-                <td id="player-status-stone-distance">0</td>
-            </tr>
+            ${body_contents}
           </tbody>
         </table>`;
 
         let status_div = document.getElementById('status');
-        status_div.insertAdjacentHTML('beforebegin', contents);
+        status_div.insertAdjacentHTML('beforebegin', table_element);
+    }
+
+    // ex. {text: '歩数', id:'player-status-walk', value: '0'}, 
+    create_table_body_contents(contents){
+        let elements = '';
+        for(const tr of contents){
+            elements += `
+            <tr>
+                <td>${tr.text}</td>
+                <td id="${tr.id}">${tr.value}</td>
+            </tr>\n`;
+        }
+
+        return elements;
     }
 
     get_table_dom(){
@@ -1247,7 +1248,7 @@ class Player_Stats {
         this._dig_wall_element = document.getElementById('player-status-dig-wall');
         this._pickup_treasures_element = document.getElementById('player-status-pickup-treasures');
         this._kill_enemies_element = document.getElementById('player-status-kill-enemies');
-        this._stone_distance_walk_element = document.getElementById('player-status-stone-distance');
+        this._stone_distance_element = document.getElementById('player-status-stone-distance');
     }
     
     add_walk() {
@@ -1271,7 +1272,7 @@ class Player_Stats {
         this._dig_wall_element.textContent = this._dig_wall;
         this._pickup_treasures_element.textContent = this._pickup_treasures;
         this._kill_enemies_element.textContent = this._kill_enemies;
-        this._stone_distance_walk_element.textContent = stone_distance;
+        this._stone_distance_element.textContent = stone_distance;
     }
 }
 
