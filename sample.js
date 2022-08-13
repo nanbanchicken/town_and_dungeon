@@ -1276,6 +1276,75 @@ class Player_Stats {
     }
 }
 
+class InventoryView {
+    // string: div_id 割り当てるHTML ID
+    // string: title テーブルタイトル
+    // MDInventory: inventory インベントリ
+    constructor(div_id, title, inventory){
+        this.div_element = document.getElementById(div_id);
+        this.body_element = null;
+
+        this.init_table_dom(title, inventory);
+        this.get_table_dom();
+    }
+
+    // 初回インベントリ表示
+    init_table_dom(title, inventory){
+        const body_contents = this.create_table_body_contents(inventory);
+
+        let table_element = `
+        <table border="1">
+          <thead>
+            <tr>
+                <th>${title}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${body_contents}
+          </tbody>
+        </table>`;
+
+        this.div_element.insertAdjacentHTML('beforebegin', table_element);
+    }
+
+    // 2回目以降のインベントリ表示
+    recreate_body(inventory){
+        const body_contents = this.create_table_body_contents(inventory);
+
+        this.body_element.textContent = body_contents;
+    }
+
+    get_table_dom(){
+        this.body_element= this.div_element.querySelector('tbody');
+    }
+
+    // MDIngentory: inventory
+    create_table_body_contents(inventory){
+        if(inventory == null){ return ''; }
+
+        const items = inventory.get_items();
+        let elements = '';
+        for (let i = 0; i < inventory.size; i++) {
+            const item = items[i];
+            elements += `
+            <tr>
+                <td>${item == null ? '空' : item.name}</td>
+            </tr>\n`;
+        }
+
+        return elements;
+    }
+
+    delete_table_body_contents(){
+        this.body_element.textContent = '';
+    }
+
+    // bool: is_show 表示に切り替えるか
+    show_table(is_show){
+        this.div_element.hidden = !is_show;
+    }
+}
+
 class Treasure extends MDObject{
 
     constructor(my_dungeon) {
@@ -1747,6 +1816,8 @@ let my_dungeon;
 let my_player;
 let my_sight_pattern;
 let my_mdMath;
+let player_iventory_view;
+let treasure_iventory_view;
 
 function setup(){
     my_mdMath = new MDMath();
@@ -1761,6 +1832,10 @@ function setup(){
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
     
     my_sight_pattern = new SightPattern(dungeon_width, dungeon_width);
+
+    player_iventory_view = new InventoryView('player-inventory', 'プレイヤのインベントリ', my_player._inventory);
+    treasure_iventory_view = new InventoryView('treasure-inventory', '宝箱のインベントリ', null);
+
     
     display_all();
 
