@@ -1,11 +1,8 @@
 .contents {
     display: flex;
-    flex-wrap: wrap;
-    width: 600px;
 }
 
-.item {
-    width: calc(100% / 2);
-    padding: 20px 10px;
+.contents .item {
+    padding: 5px;
     text-align: center;
 }
