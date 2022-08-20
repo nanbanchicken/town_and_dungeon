@@ -1159,6 +1159,7 @@ class Player {
     get_treasure_items(treasure){
         let treasure_items = treasure.get_items();
         console.info(`宝箱の元のアイテム: ${treasure_items}`);
+        
         // let is_exist_items = (treasure_items.length == 0);
         // if (!is_exist_items){return;}
 
@@ -1167,6 +1168,9 @@ class Player {
 
         console.info(`プレイヤのアイテム: ${this._inventory.get_items()}`);
         console.info(`宝箱の残りのアイテム: ${treasure.get_items()}`);
+
+        player_iventory_view.recreate_body(this._inventory);
+        treasure_iventory_view.recreate_body(treasure._inventory);
     }
 
     /**
@@ -1281,6 +1285,7 @@ class InventoryView {
     // string: title テーブルタイトル
     // MDInventory: inventory インベントリ
     constructor(div_id, title, inventory){
+        this.tbody_id = `${div_id}-tbody`;
         this.div_element = document.getElementById(div_id);
         this.body_element = null;
 
@@ -1299,7 +1304,7 @@ class InventoryView {
                 <th>${title}</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="${this.tbody_id}">
             ${body_contents}
           </tbody>
         </table>`;
@@ -1311,12 +1316,16 @@ class InventoryView {
     recreate_body(inventory){
         const body_contents = this.create_table_body_contents(inventory);
 
-        this.body_element.textContent = body_contents;
+        this.body_element.innerHTML = body_contents;
     }
 
     get_table_dom(){
-        this.body_element= this.div_element.querySelector('tbody');
+        // だめ、わからん
+        // this.body_element= this.div_element.querySelector(':scope > table > tbody');
+        this.body_element = document.getElementById(this.tbody_id);
     }
+
+    // #inventories > table:nth-child(1) > tbody:nth-child(2)
 
     // MDIngentory: inventory
     create_table_body_contents(inventory){
@@ -1328,7 +1337,7 @@ class InventoryView {
             const item = items[i];
             elements += `
             <tr>
-                <td>${item == null ? '空' : item.name}</td>
+                <td>${item == null ? '空' : item.constructor.name}</td>
             </tr>\n`;
         }
 
