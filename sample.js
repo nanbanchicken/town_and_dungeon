@@ -1287,7 +1287,7 @@ class InventoryView {
     // string: title テーブルタイトル
     // MDInventory: inventory インベントリ
     constructor(div_id, title, inventory){
-        this.tbody_id = `${div_id}-tbody`;
+        this.div_id = div_id;
         this.div_element = document.getElementById(div_id);
         this.body_element = null;
 
@@ -1306,7 +1306,7 @@ class InventoryView {
                 <th>${title}</th>
             </tr>
           </thead>
-          <tbody id="${this.tbody_id}">
+          <tbody>
             ${body_contents}
           </tbody>
         </table>`;
@@ -1322,9 +1322,7 @@ class InventoryView {
     }
 
     get_table_dom(){
-        // だめ、わからん
-        // this.body_element= this.div_element.querySelector(':scope > table > tbody');
-        this.body_element = document.getElementById(this.tbody_id);
+        this.body_element = document.querySelector(`#${this.div_id} > table > tbody`);
     }
 
     // #inventories > table:nth-child(1) > tbody:nth-child(2)
