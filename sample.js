@@ -1311,7 +1311,7 @@ class InventoryView {
           </tbody>
         </table>`;
 
-        this.div_element.insertAdjacentHTML('beforebegin', table_element);
+        this.div_element.innerHTML = table_element;
     }
 
     // 2回目以降のインベントリ表示
