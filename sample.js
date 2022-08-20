@@ -1322,7 +1322,7 @@ class InventoryView {
     }
 
     get_table_dom(){
-        this.body_element = document.querySelector(`#${this.div_id} > table > tbody`);
+        this.body_element = this.div_element.querySelector(`table > tbody`);
     }
 
     // MDIngentory: inventory
