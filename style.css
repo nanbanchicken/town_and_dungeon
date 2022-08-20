@@ -1,0 +1,11 @@
+.contents {
+    display: flex;
+    flex-wrap: wrap;
+    width: 600px;
+}
+
+.item {
+    width: calc(100% / 2);
+    padding: 20px 10px;
+    text-align: center;
+}
