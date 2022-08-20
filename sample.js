@@ -1095,6 +1095,8 @@ class Player {
     // direction: MDPoint 移動量
     move(direction) {
         let next = this._position.add(direction);
+        treasure_iventory_view.delete_table_body_contents();
+
         if (this._dungeon.is_bedrock(next)) {
             // 行き先が岩盤の移動はなし
         } else if (this._dungeon.is_wall(next)) {
