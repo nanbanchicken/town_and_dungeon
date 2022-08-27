@@ -1220,7 +1220,7 @@ class Player_Stats {
         let body_contents = this.create_table_body_contents(contents);
 
         let table_element = `
-        <table>
+        <table border="1">
           <thead>
           <tr>
               <th colspan="2">統計</th>
@@ -1232,7 +1232,7 @@ class Player_Stats {
         </table>`;
 
         let status_div = document.getElementById('status');
-        status_div.insertAdjacentHTML('beforebegin', table_element);
+        status_div.innerHTML = table_element;
     }
 
     // ex. {text: '歩数', id:'player-status-walk', value: '0'}, 
