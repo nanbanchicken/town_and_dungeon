@@ -1322,10 +1322,8 @@ class InventoryView {
     }
 
     get_table_dom(){
-        this.body_element = document.querySelector(`#${this.div_id} > table > tbody`);
+        this.body_element = this.div_element.querySelector(`table > tbody`);
     }
-
-    // #inventories > table:nth-child(1) > tbody:nth-child(2)
 
     // MDIngentory: inventory
     create_table_body_contents(inventory){
