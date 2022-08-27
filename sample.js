@@ -19,6 +19,12 @@ class World {
         C: { Type: 103, Color: 'rgb(255,255,0)'},   // 回復石 黄
     };
 
+    item_category = {
+        Weapon: Symbol(0),
+        Stone: Symbol(1),
+        Misc: Symbol(2)
+    }
+
 }
 // world.tile_info
 // world.tile_info['B'].Type
@@ -1431,9 +1437,38 @@ class TreasureList extends MDObjectList{
     _get_random_items(num){
         let array = [];
         for(let i = 0; i < num; i++){
-            array.push(this._create_item_stone() );
+            //random select 
+            const category = this.get_random_category();
+            switch (category) {
+                case world.item_category.Weapon:
+                    array.push(this._create_item_weapon() );
+                    break;                     
+                case world.item_category.Stone:
+                    array.push(this._create_item_stone() );     
+                    break;
+                default:
+                    console.error('未実装のアイテムカテゴリが使用されました。');
+                    break;
+            }
+
         }
         return array;
+    }
+
+    // アイテムのカテゴリをランダムに取得
+    get_random_category(){
+        const categories = [
+            { value: world.item_category.Weapon, rate: 3 },
+            { value: world.item_category.Stone, rate: 7 }
+        ];
+
+        let roulette = [];
+        for (const cate of categories) {
+            for (let i = 0; i < cate.rate; i++) { roulette.push(cate.value); }    
+        }
+        
+        const result = MDUtility.get_random_range(0, roulette.length + 1);
+        return roulette[result];
     }
 
     // return MDStoneItem
@@ -1442,10 +1477,11 @@ class TreasureList extends MDObjectList{
         return a;
     }
 
-    _create_weapon(){
+    _create_item_weapon(){
         // この辺はあとで他クラスに移動する
         // アイテムテーブルとかほしい
-        return new MDItemWeapon(3, 5, "Fire");
+        let weapon = new MDItemWeapon(3, 5, "Fire");
+        return weapon;
     }
 
     // position: MDPoint
