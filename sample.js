@@ -653,8 +653,8 @@ class Dungeon {
 
     _init() { 
         // 最初は全部壁で埋める
-        this.map = new MDMap(this._width, this._height, world.tile_info.Wall.Type);
-        // this.map = new MDMap(this._width, this._height, world.tile_info.Air.Type);
+        // this.map = new MDMap(this._width, this._height, world.tile_info.Wall.Type);
+        this.map = new MDMap(this._width, this._height, world.tile_info.Air.Type);
 
         // 岩盤で周囲を囲む
         let position = new MDPoint(0 ,0);
@@ -1467,7 +1467,7 @@ class TreasureList extends MDObjectList{
             for (let i = 0; i < cate.rate; i++) { roulette.push(cate.value); }    
         }
         
-        const result = MDUtility.get_random_range(0, roulette.length + 1);
+        const result = MDUtility.get_random_range(0, roulette.length);
         return roulette[result];
     }
 
