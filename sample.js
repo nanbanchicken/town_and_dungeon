@@ -709,7 +709,7 @@ class Dungeon {
     // プレイヤーを表示
     // position: MDPoint
     display_player(position) {
-        this._draw_tile(position, world.tile_info.Player.Type);
+        image(player_image, position.x * cell_px, position.y * cell_px, cell_px, cell_px);
     }
 
     // position: MDPoint
@@ -1861,6 +1861,11 @@ let my_sight_pattern;
 let my_mdMath;
 let player_iventory_view;
 let treasure_iventory_view;
+let player_image;
+
+function preload(){
+    player_image = loadImage('assets/nan.png');
+}
 
 function setup(){
     my_mdMath = new MDMath();
@@ -1878,7 +1883,6 @@ function setup(){
 
     player_iventory_view = new InventoryView('player-inventory', 'プレイヤのインベントリ', my_player._inventory);
     treasure_iventory_view = new InventoryView('treasure-inventory', '宝箱のインベントリ', null);
-
     
     display_all();
 
