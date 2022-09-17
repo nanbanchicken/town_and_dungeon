@@ -1892,7 +1892,7 @@ let treasure_iventory_view;
 let player_image;
 
 function preload(){
-    // player_image = loadImage('assets/nan.png');
+    player_image = loadImage('assets/nan.png');
 
     world.assets.Images.Enemies.Slime.Cache = loadImage('./assets/images/enemy.png');
     world.assets.Images.Enemies.Slime.CellSize = 400; // ToDo
@@ -1901,7 +1901,22 @@ function preload(){
     world.assets.Images.Treasure.CellSize = 400;
     world.assets.Images.Treasure.Position = new MDPoint(0, 0); // つづく
 
+    // 案1
+    slime = {
+        Cache: loadImage('./assets/images/enemy.png'),
+        CellSize: 400
+    }    
+    world.assets.Images.Enemies['Slime'] = slime;
 
+    // 案2
+    world.assets.Images.Enemies['Slime'] = {
+        Cache: loadImage('./assets/images/enemy.png'),
+        CellSize: 400
+    }
+    world.assets.Images.Enemies.Slime['Yowai'] = {
+        Index : 0,
+        Position : convert_index_to_image_position(0)
+    } 
 }
 
 
