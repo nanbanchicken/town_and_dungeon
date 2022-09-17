@@ -25,7 +25,35 @@ class World {
         Misc: Symbol(2)
     }
 
+    assets = {
+        Images: {
+            Enemies: {
+                Slime: {
+                    CellSize: 400, // 1画像の大きさ
+                    Cache: null, // 全体画像のキャッシュ assets.Image.Enemies.Slime.Cache
+                    Yowai : {
+                        Index: 0,
+                        Position: null // MDPoint    
+                    }
+                }
+            },
+            Treasure: {
+                CellSize: 400, 
+                Cache: null, //assets.Image.Tresure.Cache
+                Close: {
+                    Index: 0,
+                    Position: null // MDPoint
+                },
+                Open: {
+                    Index: 7,
+                    Position: null // MDPoint
+                }
+            }
+        }
+    }
 }
+// world.assets.Images.Enemies['スライム']
+
 // world.tile_info
 // world.tile_info['B'].Type
 // world.tile_info.B.Type
@@ -1864,7 +1892,23 @@ let treasure_iventory_view;
 let player_image;
 
 function preload(){
-    player_image = loadImage('assets/nan.png');
+    // player_image = loadImage('assets/nan.png');
+
+    world.assets.Images.Enemies.Slime.Cache = loadImage('./assets/images/enemy.png');
+    world.assets.Images.Enemies.Slime.CellSize = 400; // ToDo
+    world.assets.Images.Enemies.Slime.Yowai.Position = new MDPoint(0, 0); // つづく
+    world.assets.Images.Treasure.Cache = loadImage('./assets/images/treasure.png');
+    world.assets.Images.Treasure.CellSize = 400;
+    world.assets.Images.Treasure.Position = new MDPoint(0, 0); // つづく
+
+
+}
+
+
+// image_comlun_count: 全体画像の中で1画像が何個横に並んでいるか
+function convert_index_to_image_position(index, image_comlun_count = 5){
+    let positon = new MDPoint(index % image_comlun_count,  int(index / image_comlun_count));
+    return position;
 }
 
 function setup(){
