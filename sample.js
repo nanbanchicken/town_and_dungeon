@@ -33,7 +33,7 @@ class World {
                     Cache: null, // 全体画像のキャッシュ assets.Image.Enemies.Slime.Cache
                     Yowai : {
                         Index: 0,
-                        Position: null // MDPoint    
+                        Position: null // MDPoint
                     }
                 }
             },
@@ -1893,37 +1893,46 @@ let player_image;
 
 function preload(){
     player_image = loadImage('assets/nan.png');
+    init_enemy_image();
+    init_treasure_image();
+}
 
-    world.assets.Images.Enemies.Slime.Cache = loadImage('./assets/images/enemy.png');
-    world.assets.Images.Enemies.Slime.CellSize = 400; // ToDo
-    world.assets.Images.Enemies.Slime.Yowai.Position = new MDPoint(0, 0); // つづく
-    world.assets.Images.Treasure.Cache = loadImage('./assets/images/treasure.png');
-    world.assets.Images.Treasure.CellSize = 400;
-    world.assets.Images.Treasure.Position = new MDPoint(0, 0); // つづく
-
-    // 案1
+// 敵画像を用意
+function init_enemy_image(){
+    // Slime
     slime = {
         Cache: loadImage('./assets/images/enemy.png'),
         CellSize: 400
-    }    
-    world.assets.Images.Enemies['Slime'] = slime;
-
-    // 案2
-    world.assets.Images.Enemies['Slime'] = {
-        Cache: loadImage('./assets/images/enemy.png'),
-        CellSize: 400
     }
-    world.assets.Images.Enemies.Slime['Yowai'] = {
+    slime['Yowai'] = {
         Index : 0,
         Position : convert_index_to_image_position(0)
     } 
+    world.assets.Images.Enemies['Slime'] = slime;
 }
 
+// 宝箱画像を用意
+function init_treasure_image(){
+    treasure = {
+        Cache: loadImage('./assets/images/treasure.png'),
+        CellSize: 400
+    }
+    treasure['Close'] = {
+        Index : 0,
+        Position : convert_index_to_image_position(0)
+    } 
+    treasure['Open'] = {
+        Index : 7,
+        Position : convert_index_to_image_position(7)
+    } 
+    world.assets.Images.Treasure = treasure;
+}
 
+// 複数の画像を含む画像から特定の画像の左上位置を取得
 // image_comlun_count: 全体画像の中で1画像が何個横に並んでいるか
 function convert_index_to_image_position(index, image_comlun_count = 5){
-    let positon = new MDPoint(index % image_comlun_count,  int(index / image_comlun_count));
-    return position;
+    let top_left = new MDPoint(index % image_comlun_count,  int(index / image_comlun_count));
+    return top_left;
 }
 
 function setup(){
