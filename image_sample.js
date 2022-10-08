@@ -15,9 +15,14 @@ function setup(){
     const close_box_position =  convert_index_to_image_position(0);
     const open_box_position =  convert_index_to_image_position(8);
     // https://p5js.org/reference/#/p5/image
+
+
+    // d = s; copy(d, s)
     image(image_dict['box'], 
-        cell_size * 0, 0, 
-        cell_size, cell_size, 
+        cell_size * 0, 0, // 表示先の左上座標
+        cell_size, cell_size, // 表示先の高さ、幅
+        
+        // 元画像の左上座標、高さ、幅
         close_box_position.x * image_cell_size, close_box_position.y * image_cell_size, 
         image_cell_size, image_cell_size);
     image(image_dict['box'], 
