@@ -787,8 +787,21 @@ class Dungeon {
    
     }
 
+    _draw_tile(position, tile_type){
+        switch (tile_type) {
+            case world.tile_info.Enemy.Type:
+            case world.tile_info.Treasure.Type:
+                this._draw_tile_image(position, tile_type);
+                break;
+            default:
+                this._draw_tile_color(position, tile_type);
+                break;
+        }
+    }
+
+    // tile_typeの色を塗りつぶす
     // position: MDPoint
-    _draw_tile(position, tile_type) {
+    _draw_tile_color(position, tile_type) {
         // 色
         let color = this._get_tile_color(tile_type);
         if (tile_type == world.tile_info.Enemy.Type){
@@ -809,9 +822,36 @@ class Dungeon {
         }
     }
 
-    _draw_image(){
-        // 次回実装 10/08 -> 10/15
+    // tile_typeの画像を描く
+    // position: MDPoint
+    _draw_tile_image(position, tile_type){
+        let image_source_info = null;
+        let image_info = null;
+        switch (tile_type) {
+            case world.tile_info.Enemy.Type:
+                image_source_info = world.assets.Images.Enemies.Slime;
+                image_info = world.assets.Images.Enemies.Slime.Yowai;
+                break;
+            case world.tile_info.Treasure.Type:
+                // 常にしまった状態の宝箱として表示される
+                // TODO 開いた状態の画像と切り替えて使いたい
+                image_source_info = world.assets.Images.Treasure;
+                image_info = world.assets.Images.Treasure.Close;
+                break;
+            default:
+                break;
+        }
+        
+        image(image_source_info.Cache, 
+            // 表示先の左上座標、高さ、幅
+            position.x * cell_px, position.y * cell_px,
+            cell_px, cell_px,
+            // 元画像の左上座標、高さ、幅
+            image_info.Position.x * image_source_info.SouceSize, image_info.Position.y * image_source_info.SouceSize, 
+            image_source_info.SouceSize, image_source_info.SouceSize);
     }
+
+    
 
     /* 部屋関係 */
 
