@@ -29,24 +29,24 @@ class World {
         Images: {
             Enemies: {
                 Slime: {
-                    CellSize: 400, // 1画像の大きさ
                     Cache: null, // 全体画像のキャッシュ assets.Image.Enemies.Slime.Cache
+                    SouceSize: 400, // 1画像の大きさ
                     Yowai : {
                         Index: 0,
-                        Position: null // MDPoint
+                        Position: null, // MDPoint
                     }
                 }
             },
             Treasure: {
-                CellSize: 400, 
                 Cache: null, //assets.Image.Tresure.Cache
+                SouceSize: 400, // 1画像の大きさ
                 Close: {
                     Index: 0,
-                    Position: null // MDPoint
+                    Position: null, // MDPoint
                 },
                 Open: {
                     Index: 7,
-                    Position: null // MDPoint
+                    Position: null, // MDPoint
                 }
             }
         }
@@ -807,6 +807,10 @@ class Dungeon {
         }  else {
             rect(position.x * 20, position.y * 20, 20, 20);
         }
+    }
+
+    _draw_image(){
+        // 次回実装 10/08 -> 10/15
     }
 
     /* 部屋関係 */
@@ -1902,11 +1906,11 @@ function init_enemy_image(){
     // Slime
     slime = {
         Cache: loadImage('./assets/images/enemy.png'),
-        CellSize: 400
+        SouceSize: 400
     }
     slime['Yowai'] = {
         Index : 0,
-        Position : convert_index_to_image_position(0)
+        Position : convert_index_to_image_position(0),
     } 
     world.assets.Images.Enemies['Slime'] = slime;
 }
@@ -1915,15 +1919,15 @@ function init_enemy_image(){
 function init_treasure_image(){
     treasure = {
         Cache: loadImage('./assets/images/treasure.png'),
-        CellSize: 400
+        SouceSize: 400
     }
     treasure['Close'] = {
         Index : 0,
-        Position : convert_index_to_image_position(0)
+        Position : convert_index_to_image_position(0),
     } 
     treasure['Open'] = {
         Index : 7,
-        Position : convert_index_to_image_position(7)
+        Position : convert_index_to_image_position(7),
     } 
     world.assets.Images.Treasure = treasure;
 }
