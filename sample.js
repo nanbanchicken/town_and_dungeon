@@ -830,13 +830,13 @@ class Dungeon {
         switch (tile_type) {
             case world.tile_info.Enemy.Type:
                 image_source_info = world.assets.Images.Enemies.Slime;
-                image_info = world.assets.Images.Enemies.Slime.Yowai;
+                image_info = image_source_info.Yowai;
                 break;
             case world.tile_info.Treasure.Type:
                 // 常にしまった状態の宝箱として表示される
                 // TODO 開いた状態の画像と切り替えて使いたい
                 image_source_info = world.assets.Images.Treasure;
-                image_info = world.assets.Images.Treasure.Close;
+                image_info = image_source_info.Close;
                 break;
             default:
                 break;
@@ -1141,6 +1141,7 @@ class Player {
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
         this._hp = 10;
+        this._hp_max = 10;
         this._strength = 1; // damage to enemy
         this._position = new MDPoint(0, 0);
         this._inventory = new MDInventory(3, null);
@@ -1207,9 +1208,14 @@ class Player {
     }
 
     // ダメージを与える場合は -1 (<0)
-    // 回復させる場合は +value (>0)
-    update_hp(damage){
-        this._hp -= damage;
+    // 回復させる場合は +1 (>0)
+    increase_hp(value){
+        this._hp += value;
+
+        if (this._hp > this._hp_max){
+            this._hp = this._hp_max;
+        }
+
         return this;
     }
 
