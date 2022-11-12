@@ -1294,11 +1294,11 @@ class Player_Stats {
 
     init_table_dom(){
         const contents = [
-            {text: '歩数', id:'player-status-walk', value: '0'}, 
-            {text: '掘った数', id:'player-status-dig-wall', value: '0'}, 
-            {text: '拾った宝箱', id:'player-status-pickup-treasures', value: '0'}, 
-            {text: '倒した敵', id:'player-status-kill-enemies', value: '0'}, 
-            {text: '石の飛距離', id:'player-status-stone-distance', value: '0'}, 
+            {text: '歩数', id:'player-stats-walk', value: '0'}, 
+            {text: '掘った数', id:'player-stats-dig-wall', value: '0'}, 
+            {text: '拾った宝箱', id:'player-stats-pickup-treasures', value: '0'}, 
+            {text: '倒した敵', id:'player-stats-kill-enemies', value: '0'}, 
+            {text: '石の飛距離', id:'player-stats-stone-distance', value: '0'}, 
         ]
 
         let body_contents = this.create_table_body_contents(contents);
@@ -1315,11 +1315,11 @@ class Player_Stats {
           </tbody>
         </table>`;
 
-        let status_div = document.getElementById('status');
-        status_div.innerHTML = table_element;
+        let stats_div = document.getElementById('stats');
+        stats_div.innerHTML = table_element;
     }
 
-    // ex. {text: '歩数', id:'player-status-walk', value: '0'}, 
+    // ex. {text: '歩数', id:'player-stats-walk', value: '0'}, 
     create_table_body_contents(contents){
         let elements = '';
         for(const tr of contents){
@@ -1334,11 +1334,11 @@ class Player_Stats {
     }
 
     get_table_dom(){
-        this._walk_element = document.getElementById('player-status-walk');
-        this._dig_wall_element = document.getElementById('player-status-dig-wall');
-        this._pickup_treasures_element = document.getElementById('player-status-pickup-treasures');
-        this._kill_enemies_element = document.getElementById('player-status-kill-enemies');
-        this._stone_distance_element = document.getElementById('player-status-stone-distance');
+        this._walk_element = document.getElementById('player-stats-walk');
+        this._dig_wall_element = document.getElementById('player-stats-dig-wall');
+        this._pickup_treasures_element = document.getElementById('player-stats-pickup-treasures');
+        this._kill_enemies_element = document.getElementById('player-stats-kill-enemies');
+        this._stone_distance_element = document.getElementById('player-stats-stone-distance');
     }
     
     add_walk() {
