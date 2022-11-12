@@ -1280,6 +1280,78 @@ class Player {
     }
 }
 
+class HpView {
+
+    constructor() {
+        this._player_hp = 0;
+        this._enemy_hp = 0;
+        
+        this.init_table_dom();  
+        this.get_table_dom();  
+    }
+
+    init_table_dom(){
+        const contents = [
+            {text: 'プレイヤ', id:'player-hp', value: '0'}, 
+            {text: 'エネミー', id:'enemy-hp', value: '0'}, 
+        ]
+
+        let body_contents = this.create_table_body_contents(contents);
+
+        let table_element = `
+        <table border="1">
+          <thead>
+          <tr>
+              <th colspan="2">HP</th>
+          </tr>
+          </thead>
+          <tbody>
+            ${body_contents}
+          </tbody>
+        </table>`;
+
+        let hp_div = document.getElementById('hp');
+        hp_div.innerHTML = table_element;
+    }
+
+    // ex. {text: '歩数', id:'player-stats-walk', value: '0'}, 
+    create_table_body_contents(contents){
+        let elements = '';
+        for(const tr of contents){
+            elements += `
+            <tr>
+                <td>${tr.text}</td>
+                <td id="${tr.id}">${tr.value}</td>
+            </tr>\n`;
+        }
+
+        return elements;
+    }
+
+    get_table_dom(){
+        this._player_hp_element = document.getElementById('player-hp');
+        this._enemy_hp_element = document.getElementById('enemy-hp');
+    }
+    
+    update_player_hp(hp) {
+        this._player_hp = hp;
+    }
+
+    update_enemy_hp(hp) {
+        this._enemy_hp = hp;
+        this.show_enemy_hp(true);
+    }
+
+    show_enemy_hp(isShow){
+        this._enemy_hp_element.hidden = !isShow;
+    }
+    
+    display() {
+        this._player_hp_element.textContent = this._player_hp;
+        this._enemy_hp_element.textContent = this._enemy_hp;
+    }
+}
+
 class Player_Stats {
 
     constructor() {
@@ -1999,6 +2071,7 @@ function setup(){
     
     my_sight_pattern = new SightPattern(dungeon_width, dungeon_width);
 
+    hp_view = new HpView();
     player_iventory_view = new InventoryView('player-inventory', 'プレイヤのインベントリ', my_player._inventory);
     treasure_iventory_view = new InventoryView('treasure-inventory', '宝箱のインベントリ', null);
     
