@@ -1140,7 +1140,7 @@ class Player {
      */
     constructor(my_dungeon) {
         this._dungeon = my_dungeon;
-        this._hp = 10;
+        this._hp = 5;
         this._hp_max = 10;
         this._strength = 1; // damage to enemy
         this._position = new MDPoint(0, 0);
@@ -1182,12 +1182,14 @@ class Player {
         } else if (this._dungeon.is_wall(next)) {
             // 行き先が壁の場合は掘る(移動はなし)
             this._dungeon.dig_wall(next);
+            this.increase_hp(1);
             this._stats.add_dig_wall();
         } else {
             // 敵がいるか
             let is_exist_enemy = this._dungeon.is_exist_enemy(next);
             if(is_exist_enemy){
                 let enemy = this._dungeon.attacked_enemy(next, this._strength);
+                this.increase_hp(-1);
                 if(!enemy.is_alive()){
                     this._stats.add_kill_enemy();
                 }
