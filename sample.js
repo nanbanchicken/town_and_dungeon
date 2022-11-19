@@ -1150,6 +1150,7 @@ class Player {
         this._make();
 
         this._stats = new Player_Stats();
+        hp_view.update_player_hp(this._hp);
     }
 
     _make() {
@@ -1215,6 +1216,8 @@ class Player {
         if (this._hp > this._hp_max){
             this._hp = this._hp_max;
         }
+
+        hp_view.update_player_hp(this._hp);
 
         return this;
     }
@@ -1339,11 +1342,10 @@ class HpView {
 
     update_enemy_hp(hp) {
         this._enemy_hp = hp;
-        this.show_enemy_hp(true);
     }
 
-    show_enemy_hp(isShow){
-        this._enemy_hp_element.hidden = !isShow;
+    hide_enemy_hp(){
+        this._enemy_hp = '-';
     }
     
     display() {
@@ -2009,6 +2011,7 @@ let my_dungeon;
 let my_player;
 let my_sight_pattern;
 let my_mdMath;
+let hp_view;
 let player_iventory_view;
 let treasure_iventory_view;
 let player_image;
@@ -2063,6 +2066,8 @@ function setup(){
     createCanvas(canvasSize, canvasSize);
     background(255, 255, 255);
 
+    hp_view = new HpView();
+    
     room_config = new Room_Config(2, 2, 4, 4);
     
     my_dungeon = new Dungeon(dungeon_width, dungeon_width, 5, room_config, 10, 10);
@@ -2070,11 +2075,10 @@ function setup(){
     my_player = new Player(my_dungeon); // 空き部屋の一番左上
     
     my_sight_pattern = new SightPattern(dungeon_width, dungeon_width);
-
-    hp_view = new HpView();
+    
     player_iventory_view = new InventoryView('player-inventory', 'プレイヤのインベントリ', my_player._inventory);
     treasure_iventory_view = new InventoryView('treasure-inventory', '宝箱のインベントリ', null);
-    
+
     display_all();
 
     // 継承が使えるかな？
@@ -2162,5 +2166,5 @@ function display_all() {
     // my_dungeon.display_mask(my_player._position);
  
     my_player.display();
-
+    hp_view.display();
 }
