@@ -1289,7 +1289,7 @@ class HpView {
 
     constructor() {
         this._player_hp = 0;
-        this._enemy_hp = 0;
+        this._enemy_hp = '-';
         
         this.init_table_dom();  
         this.get_table_dom();  
@@ -1297,8 +1297,8 @@ class HpView {
 
     init_table_dom(){
         const contents = [
-            {text: 'プレイヤ', id:'player-hp', value: '0'}, 
-            {text: 'エネミー', id:'enemy-hp', value: '0'}, 
+            {text: 'プレイヤ', id:'player-hp', value: this._player_hp}, 
+            {text: 'エネミー', id:'enemy-hp', value: this._enemy_hp}, 
         ]
 
         let body_contents = this.create_table_body_contents(contents);
@@ -1707,9 +1707,12 @@ class Enemy extends MDObject {
         console.log("enemy.attacked");
 
         this._hp -= damage;
+        hp_view.update_enemy_hp(this._hp);
+
         if (!this.is_alive()){
             // マップ外に移動させる
             this._position.set(-1, -1);
+            hp_view.hide_enemy_hp();
         }
     }
 
