@@ -3,6 +3,52 @@
 // twitter @Suminoprogramm1
 // Nanban and Junji
 
+class GameManager {
+
+    game_status_type = {
+        Clear: Symbol(0),
+        Over: Symbol(1),
+        Play: Symbol(2),
+    }
+
+    constructor(){
+        this._game_status = this.game_status_type.Play;
+    }
+
+    is_game_over(){
+        const status = this._game_status == this.game_status_type.Over;
+        return status;
+    }
+
+    is_game_clear(){
+        const status = this._game_status == this.game_status_type.Clear;
+        return status;
+    }
+
+    game_over(){
+        this._game_status = this.game_status_type.Over;
+        this.display_game_over();
+    }
+
+    game_clear(){
+        this._game_status = this.game_status_type.Clear;
+        this.display_game_clear();
+    }
+
+    game_init(){
+        this._game_status = this.game_status_type.Play;
+        // TODO: 再開ではなく最初からプレイさせたい
+    }
+
+    display_game_over(){
+        alert("ゲームオーバーしたよーの画面表示");
+    }
+
+    display_game_clear(){
+        alert("ゲームクリアしたよーの画面表示");
+    }
+}
+
 class World {
 
     tile_info = {
@@ -1220,6 +1266,11 @@ class Player {
         }
 
         hp_view.update_player_hp(this._hp);
+        
+        // TODO: これはkeypressで判定する
+        if (this._hp  <= 0){
+            my_game_manager.game_over();
+        }
 
         return this;
     }
@@ -1752,6 +1803,16 @@ class EnemyList extends MDObjectList {
         return this.is_exist(position);
     }
 
+    // TODO: 年明けにデバッグ、これをよんでGameClear判定する
+    is_exist_alive_enemy(){
+        for (let i = 0; i < this._count; i++) {
+            const is_alive = this._object_list[i].is_alive();
+            if (is_alive){ return true; }
+        }
+
+        return false;
+    }
+
     // enemyがtargetに攻撃する
     // position: MDPoint
     attack_enemy(position, target) {
@@ -2012,6 +2073,7 @@ class Magic{
 const dungeon_width = 16;
 const cell_px = 20;
 const canvasSize = dungeon_width * cell_px;
+let my_game_manager;
 let my_dungeon;
 let my_player;
 let my_sight_pattern;
@@ -2066,6 +2128,7 @@ function convert_index_to_image_position(index, image_comlun_count = 5){
 }
 
 function setup(){
+    my_game_manager = new GameManager();
     my_mdMath = new MDMath();
 
     createCanvas(canvasSize, canvasSize);
@@ -2101,6 +2164,8 @@ function draw(){
 
 let stone_distance = 5;
 function keyPressed() {
+    if (my_game_manager.is_game_clear() || my_game_manager.is_game_over()) { return; }
+    
     let player_direction = null;
     if (key == 'w') { //up
         player_direction = new MDPoint(0, -1);
@@ -2152,6 +2217,9 @@ function keyPressed() {
             magic.doBreak(stone, animation_data);
         }
     }
+
+    // TODO: GameOver, GameClearの判定をここでやる
+    // 敵の数, プレイヤーのHPが変更されるのはKeyPressされた時だけ
 
     console.log("--------------------" + key);
 }
