@@ -13,6 +13,7 @@ class GameManager {
 
     constructor(){
         this._game_status = this.game_status_type.Play;
+        this._restart_text = "\n\nキーを入力してリスタートしてみよう！";
     }
 
     is_game_over(){
@@ -41,11 +42,11 @@ class GameManager {
     }
 
     display_game_over(){
-        alert("ゲームオーバーしたよーの画面表示");
+        alert(`ゲームオーバーしたよー${this._restart_text}`);
     }
 
     display_game_clear(){
-        alert("ゲームクリアしたよーの画面表示");
+        alert(`ゲームクリアだよーーめでたいぞ～～～！！${this._restart_text}`);
     }
 }
 
@@ -1834,6 +1835,12 @@ class EnemyList extends MDObjectList {
         }
 
         enemy.attacked(damage);
+        
+        const is_exist_alive_enemy = this.is_exist_alive_enemy();
+        if(!is_exist_alive_enemy){
+            my_game_manager.game_clear();
+        }
+
         return enemy;
     }
 }
@@ -2164,7 +2171,10 @@ function draw(){
 
 let stone_distance = 5;
 function keyPressed() {
-    if (my_game_manager.is_game_clear() || my_game_manager.is_game_over()) { return; }
+    if (my_game_manager.is_game_clear() || my_game_manager.is_game_over()) { 
+        location.reload();
+        return; 
+    }
     
     let player_direction = null;
     if (key == 'w') { //up
