@@ -2246,7 +2246,7 @@ function display_all() {
     // my_player.display();
     
     // マスクの描画
-    // my_dungeon.display_mask(my_player._position);
+    my_dungeon.display_mask(my_player._position);
  
     my_player.display();
     hp_view.display();
